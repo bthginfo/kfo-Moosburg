@@ -139,6 +139,11 @@ function buildFeedspringTemplate(): string {
  * CSS for the Feedspring widget cards - matches the site's design system
  */
 const feedspringStyles = `
+  /* ── Reset all Feedspring default styles ── */
+  .fs-container,
+  .fs-container * {
+    box-sizing: border-box;
+  }
   .fs-container {
     width: 100%;
   }
@@ -157,20 +162,24 @@ const feedspringStyles = `
       grid-template-columns: 1fr;
     }
   }
+
+  /* ── Card ── */
   .fs-review-card {
-    background: #fff;
-    border: 1px solid #eaebf0;
-    border-radius: 1rem;
-    padding: 1.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
+    background: #ffffff !important;
+    border: 1px solid #eaebf0 !important;
+    border-radius: 1rem !important;
+    padding: 1.5rem !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.75rem !important;
     transition: box-shadow 0.3s, border-color 0.3s;
   }
   .fs-review-card:hover {
     box-shadow: 0 4px 16px rgba(0,0,0,0.06);
-    border-color: rgba(245,138,7,0.2);
+    border-color: rgba(245,138,7,0.2) !important;
   }
+
+  /* ── Header ── */
   .fs-review-header {
     display: flex;
     align-items: center;
@@ -188,55 +197,87 @@ const feedspringStyles = `
     flex-shrink: 0;
   }
   .fs-avatar-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 50%;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    border-radius: 50% !important;
+    max-width: none !important;
   }
   .fs-review-meta {
     flex: 1;
     min-width: 0;
   }
   .fs-review-name {
-    color: #0d1317;
-    font-weight: 600;
-    font-size: 0.95rem;
+    color: #0d1317 !important;
+    font-weight: 600 !important;
+    font-size: 0.95rem !important;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    background: none !important;
   }
   .fs-review-date {
-    color: #979cae;
-    font-size: 0.75rem;
+    color: #979cae !important;
+    font-size: 0.75rem !important;
+    background: none !important;
   }
   .fs-google-badge {
     flex-shrink: 0;
     margin-left: auto;
   }
+
+  /* ── Stars – Override Feedspring's yellow block rendering ── */
   .fs-star-row {
     display: flex;
-    gap: 2px;
+    gap: 1px;
+    align-items: center;
+    height: 18px;
+    overflow: hidden;
   }
   .fs-star-row img {
-    width: 16px;
-    height: 16px;
+    width: 16px !important;
+    height: 16px !important;
+    max-width: 16px !important;
+    display: inline-block !important;
+    vertical-align: middle;
+    border: none !important;
+    background: none !important;
   }
-  .fs-star-active {
-    filter: sepia(1) saturate(5) hue-rotate(10deg) brightness(1.1);
-  }
-  .fs-star-inactive {
-    filter: grayscale(1) brightness(1.8);
-  }
+
+  /* ── Review text ── */
   .fs-review-text {
-    color: #424553;
-    font-size: 0.9375rem;
-    line-height: 1.7;
-    font-weight: 400;
-    margin: 0;
+    color: #424553 !important;
+    font-size: 0.9375rem !important;
+    line-height: 1.7 !important;
+    font-weight: 400 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: none !important;
     display: -webkit-box;
     -webkit-line-clamp: 5;
     -webkit-box-orient: vertical;
     overflow: hidden;
+  }
+
+  /* ── Override any Feedspring injected global styles ── */
+  .fs-container [feedspring],
+  .fs-container [feed-field] {
+    background-color: transparent !important;
+  }
+  .fs-container div[feedspring="post"] {
+    background: #ffffff !important;
+    border: 1px solid #eaebf0 !important;
+    border-radius: 1rem !important;
+    padding: 1.5rem !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+  }
+  .fs-container div[feedspring="post"]:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+    border-color: rgba(245,138,7,0.2) !important;
   }
 `;
 
