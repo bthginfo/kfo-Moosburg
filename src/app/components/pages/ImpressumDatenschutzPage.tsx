@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router";
-import { ScrollReveal } from "../ScrollReveal";
 
 export function ImpressumDatenschutzPage() {
   const { hash } = useLocation();
@@ -22,7 +21,6 @@ export function ImpressumDatenschutzPage() {
         <div className="max-w-3xl mx-auto py-12 md:py-20">
 
           {/* ======================== IMPRESSUM ======================== */}
-          <ScrollReveal>
             <section id="impressum" className="mb-16 md:mb-24 scroll-mt-24">
               <h1 className="text-3xl md:text-[3rem] mb-8">Impressum</h1>
 
@@ -123,10 +121,8 @@ export function ImpressumDatenschutzPage() {
                 </div>
               </div>
             </section>
-          </ScrollReveal>
 
           {/* ======================== DATENSCHUTZ ======================== */}
-          <ScrollReveal>
             <section id="datenschutz" className="scroll-mt-24">
               <h1 className="text-3xl md:text-[3rem] mb-8">Datenschutz</h1>
 
@@ -323,7 +319,6 @@ export function ImpressumDatenschutzPage() {
                 </div>
               </div>
             </section>
-          </ScrollReveal>
         </div>
       </div>
     </main>

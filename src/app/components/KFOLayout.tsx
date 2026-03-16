@@ -12,7 +12,7 @@ import "../../storyblok/storyblokConfig";
 
 export function KFOLayout() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen overflow-x-hidden">
       <Navbar />
       <Outlet />
       <Footer />
