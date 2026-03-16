@@ -1,15 +1,13 @@
-import { Heart, Clock, EyeOff, Shield, Handshake, Stethoscope } from "lucide-react";
 import { ScrollReveal } from "./ScrollReveal";
 import { motion } from "motion/react";
 import { useHomeContent } from "./hooks/useHomeContent";
-
-const iconMap: Record<string, any> = { Heart, Clock, EyeOff, Shield, Handshake, Stethoscope };
+import { getLucideIcon } from "./hooks/useLucideIcon";
 
 export function FeaturesSection() {
   const c = useHomeContent();
 
   const features = [1, 2, 3, 4, 5, 6].map((i) => ({
-    icon: iconMap[c[`feature_${i}_icon`]] || Heart,
+    icon: getLucideIcon(c[`feature_${i}_icon`]),
     title: c[`feature_${i}_title`] || "",
   }));
 

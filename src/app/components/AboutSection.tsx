@@ -1,17 +1,14 @@
-import { IMAGES } from "./images";
-import { Users, Award, Heart } from "lucide-react";
 import { ScrollReveal } from "./ScrollReveal";
 import { AnimatedCounter } from "./AnimatedCounter";
 import { motion } from "motion/react";
 import { useHomeContent } from "./hooks/useHomeContent";
-
-const iconMap: Record<string, any> = { Users, Award, Heart };
+import { getLucideIcon } from "./hooks/useLucideIcon";
 
 export function AboutSection() {
   const c = useHomeContent();
 
   const stats = [1, 2, 3].map((i) => ({
-    icon: iconMap[c[`about_stat_${i}_icon`]] || Heart,
+    icon: getLucideIcon(c[`about_stat_${i}_icon`]),
     value: c[`about_stat_${i}_value`],
     label: c[`about_stat_${i}_label`],
   }));
