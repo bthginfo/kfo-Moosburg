@@ -109,11 +109,10 @@ export const DEFAULTS = {
   contact_whatsapp: "+491743873065",
   contact_email: "praxis@kfo-moosburg.de",
   contact_instagram: "https://www.instagram.com/kieferorthopaedie_moosburg/?hl=de",
-  contact_maps_url: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2645.456669718668!2d11.931745076738354!3d48.466953528173065!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x479e3d88016ac899%3A0xed130e306716fd3a!2sKieferorthop%C3%A4die%20Moosburg%20Dr.%20Amann%20%26%20Dr.%20Burg!5e0!3m2!1sde!2sde!4v1712132681998!5m2!1sde!2sde",
+  contact_maps_url: "https://www.google.com/maps/embed?pb=!1m18!1m12!1d2645.456669718668!2d11.931745076738354!3d48.466953528173065!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x479e3d88016ac899%3A0xed130e306716fd3a!2sKieferorthop%C3%A4die%20Moosburg%20Dr.%20Amann%20%26%20Dr.%20Burg!5e0!3m2!1sde!2sde!4v1712132681998!5m2!1sde!2sde",
 
   // ─── NAVBAR ──────────────────────────────────────────────────────────
-  nav_logo_text: "KFO",
-  nav_logo_highlight: "Moosburg",
+  nav_logo_image: "",
   nav_phone: "08761 7222750",
   nav_cta_text: "Ersttermin vereinbaren",
 

@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { Menu, X, Phone } from "lucide-react";
 import { Link } from "react-router";
 import { useActiveSection } from "./hooks/useActiveSection";
+import { useStoryblokContent, assetUrl } from "../../storyblok/useStoryblokContent";
+import { DEFAULTS } from "../../storyblok/contentDefaults";
 
 const navLinks = [
   { href: "#uber-uns", label: "Über uns", sectionId: "uber-uns" },
@@ -15,6 +17,11 @@ export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const activeSection = useActiveSection();
+  const { story, isConnected } = useStoryblokContent("einstellungen");
+
+  // Resolve content: Storyblok or defaults
+  const c = isConnected && story ? story.content : null;
+  const logoSrc = c ? assetUrl(c.nav_logo_image, "") : "";
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -46,9 +53,17 @@ export function Navbar() {
         <div className="max-w-[80rem] mx-auto flex items-center justify-between px-4 md:px-8 py-2.5">
           {/* Logo */}
           <Link to="/" onClick={handleNavClick} className="flex items-center gap-1 group">
-            <span className="text-[#063255] text-xl md:text-2xl transition-colors" style={{ fontWeight: 600 }}>
-              KFO <span className="text-[#f58a07] group-hover:text-[#ce7305] transition-colors">Moosburg</span>
-            </span>
+            {logoSrc ? (
+              <img
+                src={logoSrc}
+                alt="KFO Moosburg"
+                className="h-8 md:h-10 w-auto"
+              />
+            ) : (
+              <span className="text-[#063255] text-xl md:text-2xl transition-colors" style={{ fontWeight: 600 }}>
+                KFO <span className="text-[#f58a07] group-hover:text-[#ce7305] transition-colors">Moosburg</span>
+              </span>
+            )}
           </Link>
 
           {/* Desktop Nav */}
