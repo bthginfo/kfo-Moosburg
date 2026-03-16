@@ -1,6 +1,11 @@
 import { Link } from "react-router";
+import { useStoryblokContent, assetUrl } from "../../storyblok/useStoryblokContent";
 
 export function Footer() {
+  const { story, isConnected } = useStoryblokContent("einstellungen");
+  const c = isConnected && story ? story.content : null;
+  const logoSrc = c ? assetUrl(c.footer_logo_image, "") : "";
+
   return (
     <footer
       className="text-white relative overflow-hidden"
@@ -11,9 +16,17 @@ export function Footer() {
           <div className="grid grid-cols-1 md:grid-cols-[0.75fr_1.25fr] gap-8 md:gap-4">
             {/* Left: Logo */}
             <div className="flex flex-col items-start">
-              <span className="text-2xl" style={{ fontWeight: 600 }}>
-                KFO <span className="text-[#f58a07]">Moosburg</span>
-              </span>
+              {logoSrc ? (
+                <img
+                  src={logoSrc}
+                  alt="KFO Moosburg"
+                  className="h-8 md:h-10 w-auto"
+                />
+              ) : (
+                <span className="text-2xl" style={{ fontWeight: 600 }}>
+                  KFO <span className="text-[#f58a07]">Moosburg</span>
+                </span>
+              )}
               <div className="h-2" />
               <p className="text-[#dceaf5]/70 text-sm" style={{ fontWeight: 300 }}>
                 Dr. Amann &amp; Dr. Burg

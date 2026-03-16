@@ -117,6 +117,7 @@ export const DEFAULTS = {
   nav_cta_text: "Ersttermin vereinbaren",
 
   // ─── FOOTER ──────────────────────────────────────────────────────────
+  footer_logo_image: "",
   footer_subtitle_1: "Dr. Amann & Dr. Burg",
   footer_subtitle_2: "Kieferorthopädie Moosburg",
   footer_phone: "08761 7222750",
