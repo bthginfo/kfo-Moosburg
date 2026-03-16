@@ -3,14 +3,19 @@ import { Users, Award, Heart } from "lucide-react";
 import { ScrollReveal } from "./ScrollReveal";
 import { AnimatedCounter } from "./AnimatedCounter";
 import { motion } from "motion/react";
+import { useHomeContent } from "./hooks/useHomeContent";
 
-const stats = [
-  { icon: Users, value: "2.000+", label: "Patienten" },
-  { icon: Award, value: "15+", label: "Jahre Erfahrung" },
-  { icon: Heart, value: "5,0", label: "Google Rating" },
-];
+const iconMap: Record<string, any> = { Users, Award, Heart };
 
 export function AboutSection() {
+  const c = useHomeContent();
+
+  const stats = [1, 2, 3].map((i) => ({
+    icon: iconMap[c[`about_stat_${i}_icon`]] || Heart,
+    value: c[`about_stat_${i}_value`],
+    label: c[`about_stat_${i}_label`],
+  }));
+
   return (
     <section className="overflow-hidden">
       <div className="px-5 md:px-10">
@@ -20,29 +25,22 @@ export function AboutSection() {
             <div className="flex flex-col justify-center items-start order-2 md:order-1">
               <ScrollReveal direction="left">
                 <h3 className="text-2xl md:text-[2.25rem] leading-tight">
-                  Ihr Ansprechpartner des Vertrauens
+                  {c.about_title}
                 </h3>
               </ScrollReveal>
               <div className="h-4" />
               <ScrollReveal direction="left" delay={100}>
-                <p>
-                  Wir legen großen Wert darauf, sowohl auf die Bedürfnisse unserer
-                  jungen Patienten einzugehen, als auch für die Eltern ein
-                  Ansprechpartner des{" "}
-                  <strong className="text-[#0d1317]">Vertrauens</strong> zu sein.
-                  Unser Ziel sind bestmögliche Ergebnisse in{" "}
-                  <strong className="text-[#0d1317]">Funktion</strong> und{" "}
-                  <strong className="text-[#0d1317]">Ästhetik</strong>.
-                </p>
+                <p dangerouslySetInnerHTML={{
+                  __html: (c.about_paragraph1 || "")
+                    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-[#0d1317]">$1</strong>')
+                }} />
               </ScrollReveal>
               <div className="h-2" />
               <ScrollReveal direction="left" delay={200}>
-                <p>
-                  Dabei ist es uns besonders wichtig die Behandlung so{" "}
-                  <strong className="text-[#0d1317]">angenehm</strong> und{" "}
-                  <strong className="text-[#0d1317]">kurz</strong> wie möglich zu
-                  halten. Wir freuen uns auf Sie!
-                </p>
+                <p dangerouslySetInnerHTML={{
+                  __html: (c.about_paragraph2 || "")
+                    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-[#0d1317]">$1</strong>')
+                }} />
               </ScrollReveal>
 
               {/* Stats row */}
@@ -76,7 +74,7 @@ export function AboutSection() {
                 <motion.img
                   whileHover={{ scale: 1.03 }}
                   transition={{ duration: 0.5 }}
-                  src={IMAGES.teamGroup}
+                  src={c.about_image}
                   alt="Team der Kieferorthopädie Moosburg"
                   className="w-full h-full object-cover"
                   loading="lazy"

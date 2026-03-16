@@ -1,6 +1,7 @@
 import { IMAGES } from "./images";
 import { ChevronDown } from "lucide-react";
 import { motion } from "motion/react";
+import { useHomeContent } from "./hooks/useHomeContent";
 
 const fadeUp = (delay: number) => ({
   initial: { opacity: 0, y: 30 },
@@ -9,6 +10,8 @@ const fadeUp = (delay: number) => ({
 });
 
 export function HeroSection() {
+  const c = useHomeContent();
+
   return (
     <header className="bg-[#dceaf5] overflow-hidden pt-20 md:pt-24 relative">
       <div className="px-5 md:px-10">
@@ -26,20 +29,18 @@ export function HeroSection() {
                   ))}
                 </div>
                 <span className="text-[#4a5d69] text-sm" style={{ fontWeight: 500 }}>
-                  5,0 / 5 bei Google (122 Bewertungen)
+                  {c.hero_trust_badge}
                 </span>
               </motion.div>
 
               <motion.h1 {...fadeUp(0.25)} className="text-3xl md:text-5xl lg:text-[4rem]">
-                Kieferorthopädie
+                {c.hero_title_line1}
                 <br />
-                Moosburg
+                {c.hero_title_line2}
               </motion.h1>
               <div className="h-4" />
-              <motion.p {...fadeUp(0.4)} className="text-base md:text-lg max-w-md">
-                Ihr Kieferorthopäde in Moosburg für
-                <br className="hidden md:block" />
-                einen gesunden Biss und ein strahlendes Lächeln!
+              <motion.p {...fadeUp(0.4)} className="text-base md:text-lg max-w-md whitespace-pre-line">
+                {c.hero_subtitle}
               </motion.p>
               <div className="h-8" />
               <motion.div {...fadeUp(0.55)} className="flex flex-wrap gap-3">
@@ -52,14 +53,14 @@ export function HeroSection() {
                   className="bg-[#f58a07] text-white hover:bg-[#ce7305] transition-all duration-200 rounded-full px-8 py-3.5 cursor-pointer hover:shadow-lg hover:shadow-[#f58a07]/30"
                   style={{ fontWeight: 500 }}
                 >
-                  Ersttermin vereinbaren
+                  {c.hero_cta_primary}
                 </button>
                 <a
                   href="#uber-uns"
                   className="bg-white/70 text-[#063255] hover:bg-white transition-all duration-200 rounded-full px-7 py-3.5 backdrop-blur-sm"
                   style={{ fontWeight: 500 }}
                 >
-                  Mehr erfahren
+                  {c.hero_cta_secondary}
                 </a>
               </motion.div>
               <div className="h-8 md:h-16" />
@@ -73,7 +74,7 @@ export function HeroSection() {
               className="relative min-h-[300px] md:min-h-[500px]"
             >
               <img
-                src={IMAGES.hero}
+                src={c.hero_image}
                 alt="Kieferorthopädie Moosburg – Moderne Praxis"
                 className="relative z-[2] w-full h-full object-cover rounded-2xl shadow-2xl"
                 loading="eager"

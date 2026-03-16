@@ -2,15 +2,18 @@ import { IMAGES } from "./images";
 import { FileText } from "lucide-react";
 import { ScrollReveal } from "./ScrollReveal";
 import { motion } from "motion/react";
+import { useHomeContent } from "./hooks/useHomeContent";
 
 export function AnamneseSection() {
+  const c = useHomeContent();
+
   return (
     <section id="anamnesebogen" className="overflow-hidden">
       <div className="grid grid-cols-1 md:grid-cols-2">
         {/* Image */}
         <ScrollReveal direction="left" className="h-64 md:h-auto relative">
           <img
-            src={IMAGES.anamnesebogen}
+            src={c.anamnese_image}
             alt="Anamnesebogen digital ausfüllen"
             className="w-full h-full object-cover block"
             loading="lazy"
@@ -31,14 +34,12 @@ export function AnamneseSection() {
             </motion.div>
           </ScrollReveal>
           <ScrollReveal direction="right" delay={100}>
-            <h2 className="text-white text-2xl md:text-[3rem] leading-tight">Unser Anamnesebogen</h2>
+            <h2 className="text-white text-2xl md:text-[3rem] leading-tight">{c.anamnese_title}</h2>
           </ScrollReveal>
           <div className="h-4" />
           <ScrollReveal direction="right" delay={200}>
             <p style={{ color: "rgba(255,255,255,0.85)" }}>
-              Sie möchten bereits Ihren Anamnesebogen ausfüllen? Kein Problem,
-              füllen Sie einfach das Formular aus und sparen Sie sich Zeit bei
-              Ihrem ersten Besuch.
+              {c.anamnese_description}
             </p>
           </ScrollReveal>
           <div className="h-6 md:h-8" />
@@ -46,13 +47,13 @@ export function AnamneseSection() {
             <motion.a
               whileHover={{ scale: 1.05, boxShadow: "0 8px 24px rgba(0,0,0,0.15)" }}
               whileTap={{ scale: 0.97 }}
-              href="https://eu1.documents.adobe.com/public/esignWidget?wid=CBFCIBAA3AAABLblqZhDpDJlcHIc7plbMCC53p_3zhyeuNykZ3i6jgurzHScsGT9OC3Dcat0jFAwCgnYbRi0*"
+              href={c.anamnese_cta_link}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-block bg-white text-[#f58a07] hover:bg-[#063255] hover:text-white transition-colors duration-200 rounded-full px-8 py-3.5"
               style={{ fontWeight: 500, textDecoration: "none" }}
             >
-              Anamnesebogen ausfüllen
+              {c.anamnese_cta_text}
             </motion.a>
           </ScrollReveal>
         </div>

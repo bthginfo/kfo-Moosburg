@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Star, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import { ScrollReveal } from "./ScrollReveal";
 import { motion, AnimatePresence } from "motion/react";
+import { useHomeContent } from "./hooks/useHomeContent";
 
 /**
  * Echte Google-Rezensionen der Kieferorthopädie Moosburg Dr. Amann & Dr. Burg.
@@ -75,9 +76,6 @@ const fallbackReviews = [
     avatar: "KP",
   },
 ];
-
-const GOOGLE_REVIEW_URL =
-  "https://www.google.com/search?q=Kieferorthop%C3%A4die+Moosburg+Dr.+Amann+%26+Dr.+Burg+Rezensionen";
 
 const FEEDSPRING_ID = "google_9u0nlRGFFfZmUhSyBsAIb";
 
@@ -394,7 +392,7 @@ function FallbackReviews() {
   return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="popLayout">
           {visibleReviews.map((review, index) => (
             <ReviewCard
               key={`${page}-${review.name}`}
@@ -445,6 +443,7 @@ function FallbackReviews() {
 export function ReviewsSection() {
   const feedspringRef = useRef<HTMLDivElement>(null);
   const [widgetReady, setWidgetReady] = useState(false);
+  const c = useHomeContent();
 
   // Monitor the Feedspring container: if it has visible review cards, show it
   useEffect(() => {
@@ -474,8 +473,9 @@ export function ReviewsSection() {
     return () => clearInterval(poll);
   }, []);
 
-  const avgRating = "5,0";
-  const reviewCount = 122;
+  const avgRating = c.reviews_google_rating;
+  const reviewCount = c.reviews_google_count;
+  const googleUrl = c.reviews_google_url;
 
   return (
     <section className="bg-white">
@@ -486,7 +486,7 @@ export function ReviewsSection() {
             <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-4">
               <div>
                 <h2 className="text-2xl md:text-[3rem]">
-                  Das sagen unsere Patienten
+                  {c.reviews_title}
                 </h2>
                 <div className="h-3" />
                 <div className="flex items-center gap-3 flex-wrap">
@@ -505,7 +505,7 @@ export function ReviewsSection() {
                     </span>
                   </div>
                   <a
-                    href={GOOGLE_REVIEW_URL}
+                    href={googleUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[#4a5d69] hover:text-[#f58a07] text-sm transition-colors inline-flex items-center gap-1"
@@ -533,7 +533,7 @@ export function ReviewsSection() {
               <p className="text-[#979cae] text-xs text-center sm:text-left" style={{ marginBottom: 0 }}>
                 Bewertungen von Google Business Profile ·{" "}
                 <a
-                  href={GOOGLE_REVIEW_URL}
+                  href={googleUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-[#f58a07] transition-colors underline"
@@ -542,7 +542,7 @@ export function ReviewsSection() {
                 </a>
               </p>
               <a
-                href={GOOGLE_REVIEW_URL}
+                href={googleUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 bg-[#edf7ff] hover:bg-[#dceaf5] text-[#063255] rounded-full px-5 py-2.5 text-sm transition-colors"

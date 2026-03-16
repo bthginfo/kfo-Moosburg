@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { MapPin, Phone, Mail, Clock, ExternalLink } from "lucide-react";
 import { ScrollReveal } from "./ScrollReveal";
+import { useHomeContent } from "./hooks/useHomeContent";
 
 export function ContactSection() {
   const [mapActive, setMapActive] = useState(false);
+  const c = useHomeContent();
 
   return (
     <section id="kontakt">
@@ -12,13 +14,9 @@ export function ContactSection() {
           {/* Header */}
           <ScrollReveal>
             <div className="mb-10 md:mb-16 max-w-2xl">
-              <h2 className="text-2xl md:text-[3rem] leading-tight">Anfahrt &amp; Kontakt</h2>
+              <h2 className="text-2xl md:text-[3rem] leading-tight">{c.contact_title}</h2>
               <div className="h-4" />
-              <p>
-                Parkplätze finden Sie in der öffentlichen Tiefgarage direkt unter
-                der Praxis (Einfahrt Bahnhofstr. 1) oder als Kurzparker vor der
-                Bäckerei Welter (Münchener Str. 2-4).
-              </p>
+              <p>{c.contact_description}</p>
             </div>
           </ScrollReveal>
 
@@ -34,15 +32,15 @@ export function ContactSection() {
                   </div>
                   <div>
                     <div className="text-[#0d1317]" style={{ fontWeight: 600 }}>
-                      Kieferorthopädie Moosburg
+                      {c.contact_practice_name}
                     </div>
                     <div className="text-[#4a5d69] text-sm mt-0.5" style={{ fontWeight: 500 }}>
-                      Dr. Amann &amp; Dr. Burg
+                      {c.contact_practice_subtitle}
                     </div>
                     <div className="text-[#4a5d69] text-sm mt-2" style={{ fontWeight: 400 }}>
-                      Münchener Straße 4a
+                      {c.contact_address_line1}
                       <br />
-                      85368 Moosburg an der Isar
+                      {c.contact_address_line2}
                     </div>
                   </div>
                 </div>
@@ -50,7 +48,7 @@ export function ContactSection() {
                 {/* Contact items */}
                 <div className="space-y-3">
                   <a
-                    href="tel:087617222750"
+                    href={`tel:${c.contact_phone.replace(/\s/g, "")}`}
                     className="flex items-center gap-4 p-4 rounded-2xl hover:bg-[#edf7ff] transition-colors group"
                   >
                     <div className="w-10 h-10 rounded-full bg-[#edf7ff] group-hover:bg-white flex items-center justify-center shrink-0 transition-colors">
@@ -61,13 +59,13 @@ export function ContactSection() {
                         Telefon
                       </div>
                       <div className="text-[#063255]" style={{ fontWeight: 600 }}>
-                        08761 7222750
+                        {c.contact_phone}
                       </div>
                     </div>
                   </a>
 
                   <a
-                    href="https://wa.me/491743873065?text=Hallo%2C%20ich%20möchte%20gerne%20einen%20Termin%20vereinbaren."
+                    href={`https://wa.me/${c.contact_whatsapp.replace(/[^0-9]/g, "")}?text=Hallo%2C%20ich%20möchte%20gerne%20einen%20Termin%20vereinbaren.`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-4 p-4 rounded-2xl hover:bg-[#edf7ff] transition-colors group"
@@ -82,13 +80,13 @@ export function ContactSection() {
                         WhatsApp <span className="text-[#4a5d69]/50">(Nur Nachrichten)</span>
                       </div>
                       <div className="text-[#063255]" style={{ fontWeight: 600 }}>
-                        +49 174 3873065
+                        {c.contact_whatsapp}
                       </div>
                     </div>
                   </a>
 
                   <a
-                    href="mailto:praxis@kfo-moosburg.de?subject=Anfrage%20an%20KFO%20Moosburg"
+                    href={`mailto:${c.contact_email}?subject=Anfrage%20an%20KFO%20Moosburg`}
                     className="flex items-center gap-4 p-4 rounded-2xl hover:bg-[#edf7ff] transition-colors group"
                   >
                     <div className="w-10 h-10 rounded-full bg-[#edf7ff] group-hover:bg-white flex items-center justify-center shrink-0 transition-colors">
@@ -99,7 +97,7 @@ export function ContactSection() {
                         E-Mail
                       </div>
                       <div className="text-[#063255]" style={{ fontWeight: 600 }}>
-                        praxis@kfo-moosburg.de
+                        {c.contact_email}
                       </div>
                     </div>
                   </a>
@@ -133,7 +131,7 @@ export function ContactSection() {
                 {/* Social */}
                 <div className="flex gap-3">
                   <a
-                    href="https://www.instagram.com/kieferorthopaedie_moosburg/?hl=de"
+                    href={c.contact_instagram}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-11 h-11 rounded-full bg-[#edf7ff] hover:bg-[#f58a07] flex items-center justify-center transition-colors group"
@@ -167,7 +165,7 @@ export function ContactSection() {
                   </button>
                 )}
                 <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2645.456669718668!2d11.931745076738354!3d48.466953528173065!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x479e3d88016ac899%3A0xed130e306716fd3a!2sKieferorthop%C3%A4die%20Moosburg%20Dr.%20Amann%20%26%20Dr.%20Burg!5e0!3m2!1sde!2sde!4v1712132681998!5m2!1sde!2sde"
+                  src={c.contact_maps_url}
                   width="100%"
                   height="100%"
                   style={{

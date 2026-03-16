@@ -1,6 +1,9 @@
 import { motion } from "motion/react";
+import { useHomeContent } from "./hooks/useHomeContent";
 
 export function CTASection() {
+  const c = useHomeContent();
+
   return (
     <section className="relative py-16 md:py-20 overflow-hidden" style={{ backgroundColor: "#063255" }}>
       {/* Decorative floating elements */}
@@ -59,8 +62,8 @@ export function CTASection() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="text-white text-2xl md:text-4xl mb-3"
         >
-          Bereit für Ihr{" "}
-          <span style={{ color: "#f58a07" }}>neues Lächeln</span>?
+          {c.cta_title}{" "}
+          <span style={{ color: "#f58a07" }}>{c.cta_title_highlight}</span>?
         </motion.h2>
 
         <motion.p
@@ -71,8 +74,7 @@ export function CTASection() {
           className="text-sm md:text-base mx-auto max-w-lg mb-8"
           style={{ color: "rgba(255,255,255,0.65)" }}
         >
-          Vereinbaren Sie jetzt Ihren kostenlosen Ersttermin – wir beraten Sie
-          gerne persönlich und unverbindlich.
+          {c.cta_subtitle}
         </motion.p>
 
         {/* Buttons */}
@@ -94,7 +96,7 @@ export function CTASection() {
             className="group relative inline-flex items-center gap-2 text-white rounded-full px-8 py-3.5 cursor-pointer transition-colors"
             style={{ backgroundColor: "#f58a07", fontWeight: 500 }}
           >
-            Ersttermin vereinbaren
+            {c.cta_primary_text}
             <svg
               width="18"
               height="18"
@@ -117,7 +119,7 @@ export function CTASection() {
             className="inline-flex items-center gap-2 text-white/80 hover:text-white border border-white/20 hover:border-white/40 rounded-full px-7 py-3.5 transition-all duration-200"
             style={{ fontWeight: 500, textDecoration: "none" }}
           >
-            Kontakt aufnehmen
+            {c.cta_secondary_text}
           </motion.a>
         </motion.div>
 
@@ -134,12 +136,12 @@ export function CTASection() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="#f58a07" stroke="none">
               <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
             </svg>
-            5,0/5 Google Bewertung
+            {c.cta_trust_1}
           </span>
           <span className="w-px h-3 bg-white/20" />
-          <span>Kostenlose Erstberatung</span>
+          <span>{c.cta_trust_2}</span>
           <span className="w-px h-3 bg-white/20 hidden sm:block" />
-          <span className="hidden sm:inline">Termine auch online</span>
+          <span className="hidden sm:inline">{c.cta_trust_3}</span>
         </motion.div>
       </div>
     </section>

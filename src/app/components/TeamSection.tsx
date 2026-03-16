@@ -1,21 +1,17 @@
 import { IMAGES } from "./images";
 import { ScrollReveal } from "./ScrollReveal";
 import { motion } from "motion/react";
-
-const teamMembers = [
-  {
-    name: "Dr. Christoph Amann",
-    role: "Fachzahnarzt für Kieferorthopädie",
-    image: IMAGES.drAmann,
-  },
-  {
-    name: "Dr. Julian Burg",
-    role: "M.Sc. Kieferorthopädie",
-    image: IMAGES.drBurg,
-  },
-];
+import { useHomeContent } from "./hooks/useHomeContent";
 
 export function TeamSection() {
+  const c = useHomeContent();
+
+  const teamMembers = [1, 2].filter(i => c[`team_${i}_name`]).map((i) => ({
+    name: c[`team_${i}_name`],
+    role: c[`team_${i}_role`],
+    image: c[`team_${i}_image`],
+  }));
+
   return (
     <section id="team">
       <div className="px-5 md:px-10">
@@ -23,9 +19,9 @@ export function TeamSection() {
           {/* Header */}
           <ScrollReveal>
             <div className="mb-10 md:mb-16 max-w-2xl">
-              <h2 className="text-2xl md:text-[3rem] leading-tight">Unser Praxisteam</h2>
+              <h2 className="text-2xl md:text-[3rem] leading-tight">{c.team_title}</h2>
               <div className="h-4" />
-              <p>Bei uns sind Sie in guten und professionellen Händen</p>
+              <p>{c.team_subtitle}</p>
             </div>
           </ScrollReveal>
 

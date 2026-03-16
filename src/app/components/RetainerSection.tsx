@@ -1,7 +1,10 @@
 import { ShieldCheck } from "lucide-react";
 import { ScrollReveal } from "./ScrollReveal";
+import { useHomeContent } from "./hooks/useHomeContent";
 
 export function RetainerSection() {
+  const c = useHomeContent();
+
   return (
     <section className="bg-[#edf7ff]">
       <div className="px-5 md:px-10">
@@ -13,17 +16,12 @@ export function RetainerSection() {
                   <ShieldCheck className="w-6 h-6 text-[#f58a07]" />
                 </div>
                 <h3 className="text-2xl md:text-[2.25rem] leading-tight">
-                  Dauerhaft stabile Ergebnisse
+                  {c.retainer_title}
                 </h3>
               </div>
             </ScrollReveal>
             <ScrollReveal direction="right" delay={150}>
-              <p>
-                Zähne können sich über das ganze Leben bewegen! Damit die Zähne
-                auch nach der Behandlung in ihrer neuen Position bleiben, empfehlen
-                wir häufig dünne geklebte Drähte (Retainer) an der Innenseite der
-                Zähne. Diese stabilisieren das Behandlungsergebnis dauerhaft.
-              </p>
+              <p>{c.retainer_description}</p>
             </ScrollReveal>
           </div>
         </div>

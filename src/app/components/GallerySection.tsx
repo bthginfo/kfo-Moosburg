@@ -1,19 +1,13 @@
-import { IMAGES } from "./images";
 import { useState, useEffect, useCallback } from "react";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { ScrollReveal } from "./ScrollReveal";
 import { motion, AnimatePresence } from "motion/react";
+import { useHomeContent } from "./hooks/useHomeContent";
 
-const galleryImages = [
-  { src: IMAGES.praxis1, alt: "Praxis Empfangsbereich" },
-  { src: IMAGES.praxis2, alt: "Wartebereich" },
-  { src: IMAGES.praxis3, alt: "Behandlungsraum" },
-  { src: IMAGES.praxis4, alt: "Praxisräume" },
-  { src: IMAGES.praxis5, alt: "Moderne Ausstattung" },
-  { src: IMAGES.praxis6, alt: "Diagnostik" },
-  { src: IMAGES.praxis7, alt: "Behandlungsinstrumente" },
-  { src: IMAGES.praxis8, alt: "Beratungsgespräch" },
-];
+interface GalleryImage {
+  src: string;
+  alt: string;
+}
 
 function Lightbox({
   images,
@@ -22,7 +16,7 @@ function Lightbox({
   onPrev,
   onNext,
 }: {
-  images: typeof galleryImages;
+  images: GalleryImage[];
   index: number;
   onClose: () => void;
   onPrev: () => void;
@@ -99,16 +93,22 @@ function Lightbox({
 }
 
 export function GallerySection() {
+  const c = useHomeContent();
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  const galleryImages: GalleryImage[] = [1, 2, 3, 4, 5, 6, 7, 8].map((i) => ({
+    src: c[`gallery_image_${i}`],
+    alt: c[`gallery_alt_${i}`] || `Praxis Bild ${i}`,
+  })).filter(img => img.src);
 
   const closeLightbox = useCallback(() => setLightboxIndex(null), []);
   const prevImage = useCallback(
     () => setLightboxIndex((i) => (i !== null ? (i - 1 + galleryImages.length) % galleryImages.length : null)),
-    []
+    [galleryImages.length]
   );
   const nextImage = useCallback(
     () => setLightboxIndex((i) => (i !== null ? (i + 1) % galleryImages.length : null)),
-    []
+    [galleryImages.length]
   );
 
   return (
@@ -118,9 +118,9 @@ export function GallerySection() {
           <div className="max-w-[80rem] mx-auto py-16 md:py-24">
             <ScrollReveal>
               <div className="text-center mb-10 md:mb-12">
-                <h2 className="text-2xl md:text-[3rem]">Unsere Praxis</h2>
+                <h2 className="text-2xl md:text-[3rem]">{c.gallery_title}</h2>
                 <div className="h-2" />
-                <p className="text-[#4a5d69]">Einblicke in unsere modernen Praxisräume</p>
+                <p className="text-[#4a5d69]">{c.gallery_subtitle}</p>
               </div>
             </ScrollReveal>
 

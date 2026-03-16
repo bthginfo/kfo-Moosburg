@@ -10,35 +10,38 @@ import { TeamSection } from "../TeamSection";
 import { AnamneseSection } from "../AnamneseSection";
 import { GallerySection } from "../GallerySection";
 import { ContactSection } from "../ContactSection";
+import { HomeContentProvider } from "../hooks/useHomeContent";
 
 export function KFOHomePage() {
   return (
-    <main>
-      <HeroSection />
-      <ScrollReveal>
-        <FeaturesSection />
-      </ScrollReveal>
-      <ScrollReveal>
-        <AboutSection />
-      </ScrollReveal>
-      <ScrollReveal>
-        <ReviewsSection />
-      </ScrollReveal>
-      <ServicesSection />
-      <ScrollReveal>
-        <RetainerSection />
-      </ScrollReveal>
-      <CTASection />
-      <ScrollReveal>
-        <TeamSection />
-      </ScrollReveal>
-      <AnamneseSection />
-      <ScrollReveal>
-        <GallerySection />
-      </ScrollReveal>
-      <ScrollReveal>
-        <ContactSection />
-      </ScrollReveal>
-    </main>
+    <HomeContentProvider>
+      <main>
+        <HeroSection />
+        <ScrollReveal>
+          <FeaturesSection />
+        </ScrollReveal>
+        <ScrollReveal>
+          <AboutSection />
+        </ScrollReveal>
+        <ScrollReveal>
+          <ReviewsSection />
+        </ScrollReveal>
+        <ServicesSection />
+        <ScrollReveal>
+          <RetainerSection />
+        </ScrollReveal>
+        <CTASection />
+        <ScrollReveal>
+          <TeamSection />
+        </ScrollReveal>
+        <AnamneseSection />
+        <ScrollReveal>
+          <GallerySection />
+        </ScrollReveal>
+        <ScrollReveal>
+          <ContactSection />
+        </ScrollReveal>
+      </main>
+    </HomeContentProvider>
   );
 }

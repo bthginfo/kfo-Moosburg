@@ -1,17 +1,18 @@
 import { Heart, Clock, EyeOff, Shield, Handshake, Stethoscope } from "lucide-react";
 import { ScrollReveal } from "./ScrollReveal";
 import { motion } from "motion/react";
+import { useHomeContent } from "./hooks/useHomeContent";
 
-const features = [
-  { icon: Heart, title: "Schonende\nZahnbewegung" },
-  { icon: Clock, title: "Kurze\nBehandlungszeit" },
-  { icon: EyeOff, title: "Unsichtbare\nZahnspangen" },
-  { icon: Shield, title: "Möglichst Erhalt\naller Zähne" },
-  { icon: Handshake, title: "Gemeinsame\nTherapieplanung" },
-  { icon: Stethoscope, title: "Dauerhaft stabile\nErgebnisse" },
-];
+const iconMap: Record<string, any> = { Heart, Clock, EyeOff, Shield, Handshake, Stethoscope };
 
 export function FeaturesSection() {
+  const c = useHomeContent();
+
+  const features = [1, 2, 3, 4, 5, 6].map((i) => ({
+    icon: iconMap[c[`feature_${i}_icon`]] || Heart,
+    title: c[`feature_${i}_title`] || "",
+  }));
+
   return (
     <section id="uber-uns" className="bg-[#edf7ff]">
       <div className="px-5 md:px-10">
@@ -21,21 +22,14 @@ export function FeaturesSection() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12">
               <ScrollReveal direction="left">
                 <h3 className="text-2xl md:text-[2.25rem] leading-tight">
-                  Herzlich Willkommen in unserer Praxis für Kieferorthopädie in
-                  Moosburg an der Isar
+                  {c.features_title}
                 </h3>
               </ScrollReveal>
               <ScrollReveal direction="right" delay={150}>
-                <p>
-                  Zusammen mit unserem Team stehen wir sowohl{" "}
-                  <strong className="text-[#0d1317]">Kindern und Jugendlichen</strong>{" "}
-                  als auch{" "}
-                  <strong className="text-[#0d1317]">Erwachsenen</strong> in
-                  kieferorthopädischen Fragen zur Seite. Wir bieten Ihnen eine
-                  hochwertige kieferorthopädische Behandlung mit moderner Technik
-                  und hoher fachlicher Kompetenz in{" "}
-                  <strong className="text-[#0d1317]">entspannter</strong> Atmosphäre.
-                </p>
+                <p dangerouslySetInnerHTML={{
+                  __html: (c.features_description || "")
+                    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-[#0d1317]">$1</strong>')
+                }} />
               </ScrollReveal>
             </div>
 
