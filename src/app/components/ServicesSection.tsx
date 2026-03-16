@@ -1,3 +1,4 @@
+import { ScrollReveal } from "./ScrollReveal";
 import { motion } from "motion/react";
 import { useHomeContent } from "./hooks/useHomeContent";
 
@@ -18,11 +19,9 @@ function ServiceBlock({ service, index }: { service: ServiceItem; index: number 
       <div className="max-w-[80rem] mx-auto py-12 md:py-20">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16 items-center">
           {/* Image */}
-          <motion.div
-            initial={{ x: isLeft ? -50 : 50, opacity: 0 }}
-            whileInView={{ x: 0, opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: index * 60 }}
+          <ScrollReveal
+            direction={isLeft ? "left" : "right"}
+            delay={index * 60}
             className={`relative group ${isLeft ? "order-1" : "order-1 md:order-2"}`}
           >
             <div className="overflow-hidden rounded-[1.25rem]">
@@ -45,17 +44,15 @@ function ServiceBlock({ service, index }: { service: ServiceItem; index: number 
                 mixBlendMode: "multiply",
               }}
             />
-          </motion.div>
+          </ScrollReveal>
 
           {/* Text */}
-          <motion.div
-            initial={{ x: isLeft ? 50 : -50, opacity: 0 }}
-            whileInView={{ x: 0, opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: index * 60 + 150 }}
+          <ScrollReveal
+            direction={isLeft ? "right" : "left"}
+            delay={index * 60 + 150}
             className={`flex flex-col justify-center items-start ${isLeft ? "order-2" : "order-2 md:order-1"}`}
           >
-            {"highlight" in service && service.highlight && (
+            {service.highlight && (
               <motion.span
                 initial={{ scale: 0.8, opacity: 0 }}
                 whileInView={{ scale: 1, opacity: 1 }}
@@ -86,7 +83,7 @@ function ServiceBlock({ service, index }: { service: ServiceItem; index: number 
                 <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
               </svg>
             </motion.button>
-          </motion.div>
+          </ScrollReveal>
         </div>
       </div>
     </div>
@@ -119,11 +116,11 @@ export function ServicesSection() {
         />
         <div className="absolute inset-0 bg-[#063255]/40" />
         <div className="relative z-10 flex items-center justify-center h-full px-5">
-          <motion.div>
+          <ScrollReveal>
             <h2 className="text-white text-2xl md:text-[3rem] text-center drop-shadow-lg">
               {c.services_title}
             </h2>
-          </motion.div>
+          </ScrollReveal>
         </div>
       </div>
       {services.map((service, index) => (
