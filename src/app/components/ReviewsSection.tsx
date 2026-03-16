@@ -139,32 +139,23 @@ function buildFeedspringTemplate(): string {
  * CSS for the Feedspring widget cards - matches the site's design system
  */
 const feedspringStyles = `
-  /* ── Reset all Feedspring default styles ── */
-  .fs-container,
-  .fs-container * {
-    box-sizing: border-box;
-  }
-  .fs-container {
-    width: 100%;
-  }
+  .fs-container, .fs-container * { box-sizing: border-box; }
+  .fs-container { width: 100%; }
   .fs-reviews-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 1.25rem;
   }
   @media (max-width: 1023px) {
-    .fs-reviews-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
+    .fs-reviews-grid { grid-template-columns: repeat(2, 1fr); }
   }
   @media (max-width: 639px) {
-    .fs-reviews-grid {
-      grid-template-columns: 1fr;
-    }
+    .fs-reviews-grid { grid-template-columns: 1fr; }
   }
 
-  /* ── Card ── */
-  .fs-review-card {
+  /* Card */
+  .fs-review-card,
+  .fs-container div[feedspring="post"] {
     background: #ffffff !important;
     border: 1px solid #eaebf0 !important;
     border-radius: 1rem !important;
@@ -174,86 +165,70 @@ const feedspringStyles = `
     gap: 0.75rem !important;
     transition: box-shadow 0.3s, border-color 0.3s;
   }
-  .fs-review-card:hover {
+  .fs-review-card:hover,
+  .fs-container div[feedspring="post"]:hover {
     box-shadow: 0 4px 16px rgba(0,0,0,0.06);
     border-color: rgba(245,138,7,0.2) !important;
   }
 
-  /* ── Header ── */
-  .fs-review-header {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
+  /* Header */
+  .fs-review-header { display: flex; align-items: center; gap: 0.75rem; }
   .fs-review-avatar {
-    width: 2.75rem;
-    height: 2.75rem;
-    border-radius: 50%;
-    background: #edf7ff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    flex-shrink: 0;
+    width: 2.75rem; height: 2.75rem; border-radius: 50%;
+    background: #edf7ff; display: flex; align-items: center;
+    justify-content: center; overflow: hidden; flex-shrink: 0;
   }
   .fs-avatar-img {
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover !important;
-    border-radius: 50% !important;
+    width: 100% !important; height: 100% !important;
+    object-fit: cover !important; border-radius: 50% !important;
     max-width: none !important;
   }
-  .fs-review-meta {
-    flex: 1;
-    min-width: 0;
-  }
+  .fs-review-meta { flex: 1; min-width: 0; }
   .fs-review-name {
-    color: #0d1317 !important;
-    font-weight: 600 !important;
-    font-size: 0.95rem !important;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    text-transform: none !important;
-    letter-spacing: normal !important;
+    color: #0d1317 !important; font-weight: 600 !important;
+    font-size: 0.95rem !important; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
     background: none !important;
   }
   .fs-review-date {
-    color: #979cae !important;
-    font-size: 0.75rem !important;
+    color: #979cae !important; font-size: 0.75rem !important;
     background: none !important;
   }
-  .fs-google-badge {
-    flex-shrink: 0;
-    margin-left: auto;
-  }
+  .fs-google-badge { flex-shrink: 0; margin-left: auto; }
 
-  /* ── Stars – Override Feedspring's yellow block rendering ── */
+  /* Stars – HIDE Feedspring broken images, replace with CSS unicode stars */
   .fs-star-row {
-    display: flex;
-    gap: 1px;
-    align-items: center;
-    height: 18px;
-    overflow: hidden;
+    display: block !important;
+    height: 20px !important;
+    line-height: 20px !important;
+    font-size: 0 !important;
   }
-  .fs-star-row img {
-    width: 16px !important;
-    height: 16px !important;
-    max-width: 16px !important;
-    display: inline-block !important;
-    vertical-align: middle;
-    border: none !important;
-    background: none !important;
+  .fs-star-row img,
+  .fs-star-row .fs-star-active,
+  .fs-star-row .fs-star-inactive,
+  .fs-star-row [feed-field="star"],
+  .fs-star-row [feed-field="star-inactive"] {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    visibility: hidden !important;
+  }
+  .fs-star-row::before {
+    content: "\\2605\\2605\\2605\\2605\\2605";
+    color: #FBBC05;
+    font-size: 16px;
+    letter-spacing: 2px;
+    line-height: 20px;
+    display: inline-block;
   }
 
-  /* ── Review text ── */
+  /* Review text */
   .fs-review-text {
     color: #424553 !important;
     font-size: 0.9375rem !important;
     line-height: 1.7 !important;
     font-weight: 400 !important;
-    margin: 0 !important;
-    padding: 0 !important;
+    margin: 0 !important; padding: 0 !important;
     background: none !important;
     display: -webkit-box;
     -webkit-line-clamp: 5;
@@ -261,23 +236,10 @@ const feedspringStyles = `
     overflow: hidden;
   }
 
-  /* ── Override any Feedspring injected global styles ── */
+  /* Global overrides for any Feedspring injected styles */
   .fs-container [feedspring],
   .fs-container [feed-field] {
     background-color: transparent !important;
-  }
-  .fs-container div[feedspring="post"] {
-    background: #ffffff !important;
-    border: 1px solid #eaebf0 !important;
-    border-radius: 1rem !important;
-    padding: 1.5rem !important;
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 0.75rem !important;
-  }
-  .fs-container div[feedspring="post"]:hover {
-    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
-    border-color: rgba(245,138,7,0.2) !important;
   }
 `;
 
