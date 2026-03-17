@@ -6,4 +6,4 @@ Disallow: /admin
 Disallow: /api/
 
 # Sitemap
-Sitemap: https://marioschub.com/sitemap.xml
+Sitemap: https://kfo-moosburg.de/sitemap.xml
