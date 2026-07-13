@@ -83,7 +83,7 @@ export const DEFAULTS = {
   anamnese_title: "Unser Anamnesebogen",
   anamnese_description: "Sie möchten bereits Ihren Anamnesebogen ausfüllen? Kein Problem, füllen Sie einfach das Formular aus und sparen Sie sich Zeit bei Ihrem ersten Besuch.",
   anamnese_cta_text: "Anamnesebogen ausfüllen",
-  anamnese_cta_link: "https://eu1.documents.adobe.com/public/esignWidget?wid=CBFCIBAA3AAABLblqZhDpDJlcHIc7plbMCC53p_3zhyeuNykZ3i6jgurzHScsGT9OC3Dcat0jFAwCgnYbRi0*",
+  anamnese_cta_link: "https://kfo-moosburg.eu1.documents.adobe.com/public/esignWidget?wid=CBFCIBAA3AAABLblqZhB79JplX13uBUwew3CVV6rzvwzxZZtZlVycjVbyp__XhlPNFgmJ9oH-rlFo1BpIPwE*",
   anamnese_image: IMAGES.anamnesebogen,
 
   // ─── GALLERY ─────────────────────────────────────────────────────────
