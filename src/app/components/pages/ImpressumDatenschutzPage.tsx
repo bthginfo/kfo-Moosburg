@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router";
+import { isIieBookingLive } from "../../../config/booking";
 
 export function ImpressumDatenschutzPage() {
   const { hash } = useLocation();
@@ -287,6 +288,29 @@ export function ImpressumDatenschutzPage() {
                     Vom Anbieter wird derzeit keine Möglichkeit für einen einfachen Opt-out oder ein Blockieren der Datenübertragung angeboten. Wenn Sie eine Nachverfolgung Ihrer Aktivitäten auf unserer Website verhindern wollen, widerrufen Sie bitte im Cookie-Consent-Tool Ihre Einwilligung für die entsprechende Cookie-Kategorie oder alle technisch nicht notwendigen Cookies und Datenübertragungen. In diesem Fall können Sie unsere Website jedoch ggfs. nicht oder nur eingeschränkt nutzen.
                   </p>
                 </div>
+
+                {isIieBookingLive() && (
+                  <div>
+                    <h3 className="text-[#0d1317] text-lg mb-2" style={{ fontWeight: 600 }}>Online-Terminvereinbarung (iie-systems)</h3>
+                    <p>
+                      Wir verwenden Anwendungen von iie-systems GmbH &amp; Co. KG, Georgstrasse 24, 49809 Lingen.
+                    </p>
+                    <p>Durch diese Anwendungen können Patienten online über die Webseite</p>
+                    <ol className="list-decimal pl-5 space-y-1 mt-2">
+                      <li>Online Termine vereinbaren.</li>
+                      <li>Eine digitale Sprechstunde nutzen. (gilt nur für Anwender mit der Anwendung my Images)</li>
+                    </ol>
+                    <p className="mt-2">
+                      Weiterhin nutzen wir in der Praxis einen Terminservice zur Patienteninformation per E-Mail.
+                    </p>
+                    <p>
+                      Nähere Informationen zum Datenschutz bei iie-systems finden Sie unter:{" "}
+                      <a href="https://www.iie-systems.de/service/datenschutz/" target="_blank" rel="noopener noreferrer" className="text-[#f58a07] hover:underline break-all">
+                        https://www.iie-systems.de/service/datenschutz/
+                      </a>
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <h3 className="text-[#0d1317] text-lg mb-2" style={{ fontWeight: 600 }}>SSL-Verschlüsselung</h3>

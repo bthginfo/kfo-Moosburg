@@ -1,6 +1,7 @@
 import { ScrollReveal } from "./ScrollReveal";
 import { motion } from "motion/react";
 import { useHomeContent } from "./hooks/useHomeContent";
+import { openBooking } from "../../config/booking";
 
 interface ServiceItem {
   title: string;
@@ -70,11 +71,7 @@ function ServiceBlock({ service, index }: { service: ServiceItem; index: number 
             <div className="h-6" />
             <motion.button
               whileHover={{ x: 4 }}
-              onClick={() => {
-                if (typeof (window as any).toggleDrFlexAppointments === "function") {
-                  (window as any).toggleDrFlexAppointments();
-                }
-              }}
+              onClick={openBooking}
               className="text-[#f58a07] hover:text-[#ce7305] transition-colors cursor-pointer group/btn flex items-center gap-1"
               style={{ fontWeight: 500 }}
             >

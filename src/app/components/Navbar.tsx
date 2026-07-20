@@ -4,6 +4,7 @@ import { Link } from "react-router";
 import { useActiveSection } from "./hooks/useActiveSection";
 import { useStoryblokContent, assetUrl } from "../../storyblok/useStoryblokContent";
 import { DEFAULTS } from "../../storyblok/contentDefaults";
+import { openBooking } from "../../config/booking";
 
 const navLinks = [
   { href: "#uber-uns", label: "Über uns", sectionId: "uber-uns" },
@@ -96,11 +97,7 @@ export function Navbar() {
             </a>
             <div className="ml-3">
               <button
-                onClick={() => {
-                  if (typeof (window as any).toggleDrFlexAppointments === "function") {
-                    (window as any).toggleDrFlexAppointments();
-                  }
-                }}
+                onClick={openBooking}
                 className="bg-[#063255] text-[#dceaf5] hover:bg-[#f58a07] hover:text-white transition-all duration-200 rounded-full px-7 py-2.5 cursor-pointer hover:shadow-lg hover:shadow-[#f58a07]/20"
                 style={{ fontWeight: 500 }}
               >
@@ -165,9 +162,7 @@ export function Navbar() {
               <button
                 onClick={() => {
                   handleNavClick();
-                  if (typeof (window as any).toggleDrFlexAppointments === "function") {
-                    (window as any).toggleDrFlexAppointments();
-                  }
+                  openBooking();
                 }}
                 className="block w-full bg-[#f58a07] text-white text-center hover:bg-[#ce7305] transition-colors rounded-full px-8 py-3.5 cursor-pointer"
                 style={{ fontWeight: 500 }}

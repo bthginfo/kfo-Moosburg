@@ -2,6 +2,7 @@ import { IMAGES } from "./images";
 import { ChevronDown } from "lucide-react";
 import { motion } from "motion/react";
 import { useHomeContent } from "./hooks/useHomeContent";
+import { openBooking } from "../../config/booking";
 
 const fadeUp = (delay: number) => ({
   initial: { opacity: 0, y: 30 },
@@ -45,11 +46,7 @@ export function HeroSection() {
               <div className="h-8" />
               <motion.div {...fadeUp(0.55)} className="flex flex-wrap gap-3">
                 <button
-                  onClick={() => {
-                    if (typeof (window as any).toggleDrFlexAppointments === "function") {
-                      (window as any).toggleDrFlexAppointments();
-                    }
-                  }}
+                  onClick={openBooking}
                   className="bg-[#f58a07] text-white hover:bg-[#ce7305] transition-all duration-200 rounded-full px-8 py-3.5 cursor-pointer hover:shadow-lg hover:shadow-[#f58a07]/30"
                   style={{ fontWeight: 500 }}
                 >

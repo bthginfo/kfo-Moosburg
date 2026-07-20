@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
 import { useHomeContent } from "./hooks/useHomeContent";
+import { openBooking } from "../../config/booking";
 
 export function CTASection() {
   const c = useHomeContent();
@@ -88,11 +89,7 @@ export function CTASection() {
           <motion.button
             whileHover={{ scale: 1.05, boxShadow: "0 10px 30px rgba(245,138,7,0.35)" }}
             whileTap={{ scale: 0.97 }}
-            onClick={() => {
-              if (typeof (window as any).toggleDrFlexAppointments === "function") {
-                (window as any).toggleDrFlexAppointments();
-              }
-            }}
+            onClick={openBooking}
             className="group relative inline-flex items-center gap-2 text-white rounded-full px-8 py-3.5 cursor-pointer transition-colors"
             style={{ backgroundColor: "#f58a07", fontWeight: 500 }}
           >

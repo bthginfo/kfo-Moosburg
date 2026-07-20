@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Calendar } from "lucide-react";
+import { openBooking } from "../../config/booking";
 
 /**
  * Floating "Ersttermin vereinbaren" button, visible only on mobile after scrolling past the hero.
@@ -15,12 +16,6 @@ export function StickyMobileCTA() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const triggerDrFlex = () => {
-    if (typeof (window as any).toggleDrFlexAppointments === "function") {
-      (window as any).toggleDrFlexAppointments();
-    }
-  };
-
   return (
     <div
       className={`lg:hidden fixed bottom-0 left-0 right-0 z-40 transition-all duration-300 ${
@@ -32,7 +27,7 @@ export function StickyMobileCTA() {
     >
       <div className="bg-white/95 backdrop-blur-md border-t border-[#0d1317]/10 px-4 py-3">
         <button
-          onClick={triggerDrFlex}
+          onClick={openBooking}
           className="w-full bg-[#f58a07] text-white hover:bg-[#ce7305] transition-colors rounded-full py-3.5 flex items-center justify-center gap-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f58a07]"
           style={{ fontWeight: 500 }}
           aria-label="Ersttermin online vereinbaren"

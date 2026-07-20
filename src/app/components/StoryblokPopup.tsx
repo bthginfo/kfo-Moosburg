@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { X, Calendar, Sparkles } from "lucide-react";
 import { useStoryblokContent, assetUrl } from "../../storyblok/useStoryblokContent";
 import { DEFAULTS } from "../../storyblok/contentDefaults";
+import { openBooking } from "../../config/booking";
 
 const SESSION_KEY = "kfo-popup-dismissed";
 
@@ -54,9 +55,7 @@ export function StoryblokPopup() {
 
   const handleCTA = useCallback(() => {
     if (config.cta_is_drflex) {
-      if (typeof (window as any).toggleDrFlexAppointments === "function") {
-        (window as any).toggleDrFlexAppointments();
-      }
+      openBooking();
     } else if (config.cta_link) {
       window.location.href = config.cta_link;
     }
