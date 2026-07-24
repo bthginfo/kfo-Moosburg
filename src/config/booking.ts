@@ -17,11 +17,12 @@ export const IIE_BOOKING_URL = "https://iie-systems.de/online-termin-kfo-mossbur
 
 /**
  * Go-Live-Zeitpunkt der iie-Terminbuchung.
- * Freitag, 24.07.2026, 12:00 Uhr Europe/Berlin (Sommerzeit CEST = UTC+2)
- * entspricht 10:00:00 UTC. Der Vergleich erfolgt gegen Date.now() (UTC-basiert)
- * und ist damit unabhängig von der Zeitzone des Besuchers.
+ * Freitag, 24.07.2026, 10:00 Uhr Europe/Berlin (Sommerzeit CEST = UTC+2)
+ * entspricht 08:00:00 UTC. Dieser Zeitpunkt liegt in der Vergangenheit – die
+ * iie-Buchung ist damit live. Der Vergleich erfolgt gegen Date.now()
+ * (UTC-basiert) und ist damit unabhängig von der Zeitzone des Besuchers.
  */
-export const BOOKING_GO_LIVE_AT = Date.UTC(2026, 6, 24, 10, 0, 0);
+export const BOOKING_GO_LIVE_AT = Date.UTC(2026, 6, 24, 8, 0, 0);
 
 /** Externes DR.Flex-Embed-Script (nur bis zum Go-Live aktiv). */
 const DRFLEX_EMBED_SRC = "https://dr-flex.de/embed.js?medicalPracticeId=46546";
