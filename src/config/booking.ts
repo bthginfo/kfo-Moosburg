@@ -16,20 +16,32 @@
 export const IIE_BOOKING_URL = "https://iie-systems.de/online-termin-kfo-mossburg";
 
 /**
- * Go-Live-Zeitpunkt der iie-Terminbuchung.
- * Freitag, 24.07.2026, 10:00 Uhr Europe/Berlin (Sommerzeit CEST = UTC+2)
- * entspricht 08:00:00 UTC. Dieser Zeitpunkt liegt in der Vergangenheit – die
- * iie-Buchung ist damit live. Der Vergleich erfolgt gegen Date.now()
- * (UTC-basiert) und ist damit unabhängig von der Zeitzone des Besuchers.
+ * Master-Schalter für die Terminbuchung.
+ *
+ * false = DR.Flex bleibt aktiv (aktueller Stand – die Praxis ist sich beim
+ *         Wechsel noch nicht sicher). Der iie-Code bleibt vollständig erhalten,
+ *         ist aber deaktiviert.
+ * true  = Umstellung auf iie-systems; zusätzlich muss der Go-Live-Zeitpunkt
+ *         unten erreicht sein.
+ *
+ * Zum Reaktivieren von iie genügt es, diesen Wert auf true zu setzen.
+ */
+export const IIE_BOOKING_ENABLED = false;
+
+/**
+ * Go-Live-Zeitpunkt der iie-Terminbuchung (nur relevant, wenn
+ * IIE_BOOKING_ENABLED = true).
+ * Der Vergleich erfolgt gegen Date.now() (UTC-basiert) und ist damit unabhängig
+ * von der Zeitzone des Besuchers.
  */
 export const BOOKING_GO_LIVE_AT = Date.UTC(2026, 6, 24, 8, 0, 0);
 
-/** Externes DR.Flex-Embed-Script (nur bis zum Go-Live aktiv). */
+/** Externes DR.Flex-Embed-Script (aktiv, solange iie nicht live ist). */
 const DRFLEX_EMBED_SRC = "https://dr-flex.de/embed.js?medicalPracticeId=46546";
 
-/** True, sobald die iie-Terminbuchung live geschaltet ist. */
+/** True, wenn die iie-Terminbuchung aktiviert und ihr Go-Live erreicht ist. */
 export function isIieBookingLive(now: number = Date.now()): boolean {
-  return now >= BOOKING_GO_LIVE_AT;
+  return IIE_BOOKING_ENABLED && now >= BOOKING_GO_LIVE_AT;
 }
 
 /**
