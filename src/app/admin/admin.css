@@ -32,6 +32,9 @@
 .admin-field.admin-field-leading { padding-left: 46px; }
 .admin-field.admin-field-trailing { padding-right: 46px; }
 textarea.admin-field { padding-top: 11px; padding-bottom: 11px; resize: vertical; }
+.admin-field.admin-message-editor {
+  min-height: clamp(320px, 38vh, 380px);
+}
 
 .admin-primary-button,
 .admin-secondary-button,
@@ -90,6 +93,7 @@ textarea.admin-field { padding-top: 11px; padding-bottom: 11px; resize: vertical
 .admin-dialog-scroll::-webkit-scrollbar-thumb { background: #93b1c4; border: 2px solid #edf4f8; border-radius: 8px; }
 
 @media (max-width: 639px) {
+  .admin-field.admin-message-editor { min-height: 240px; }
   .admin-work-dialog {
     width: calc(100vw - 16px) !important;
     max-width: calc(100vw - 16px) !important;

@@ -276,7 +276,7 @@ function ReminderDialog({
                   <input className="admin-field w-full" value={draft.subject} onFocus={() => setActiveField("subject")} onChange={(event) => set("subject", event.target.value)} />
                 </Field>
                 <Field label="Nachricht">
-                  <textarea className="admin-field min-h-[190px] w-full leading-6" value={draft.body} onFocus={() => setActiveField("body")} onChange={(event) => set("body", event.target.value)} />
+                  <textarea className="admin-field admin-message-editor w-full leading-6" value={draft.body} onFocus={() => setActiveField("body")} onChange={(event) => set("body", event.target.value)} />
                   <p className="admin-help">Nur Text und Platzhalter – unsichere HTML-Inhalte werden entfernt.</p>
                 </Field>
 
