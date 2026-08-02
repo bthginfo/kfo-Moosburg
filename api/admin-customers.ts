@@ -11,7 +11,7 @@ import {
   requireAdmin,
   setPrivateResponse,
   upsertEvent,
-} from "../src/server/kfoAdmin";
+} from "../src/server/kfoAdmin.js";
 
 function payload(req: VercelRequest) {
   return req.body?.customer || req.body || {};

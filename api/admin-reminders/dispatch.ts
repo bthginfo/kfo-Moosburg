@@ -13,7 +13,7 @@ import {
   setPrivateResponse,
   upsertEvent,
   type DeliveryLog,
-} from "../../src/server/kfoAdmin";
+} from "../../src/server/kfoAdmin.js";
 
 function cronAuthorized(req: VercelRequest): boolean {
   const cronSecret = process.env.CRON_SECRET;

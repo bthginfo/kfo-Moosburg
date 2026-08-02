@@ -4,7 +4,7 @@ import {
   ensureWriteOrigin,
   setPrivateResponse,
   verifyAdminPassword,
-} from "../src/server/kfoAdmin";
+} from "../src/server/kfoAdmin.js";
 
 /**
  * Backwards-compatible login endpoint. New clients use /api/admin-login.

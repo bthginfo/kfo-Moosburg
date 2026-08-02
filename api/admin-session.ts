@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { hasStoreConfiguration, isAdmin, setPrivateResponse } from "../src/server/kfoAdmin";
+import { hasStoreConfiguration, isAdmin, setPrivateResponse } from "../src/server/kfoAdmin.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setPrivateResponse(res);

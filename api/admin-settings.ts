@@ -9,7 +9,7 @@ import {
   requireAdmin,
   setPrivateResponse,
   upsertEvent,
-} from "../src/server/kfoAdmin";
+} from "../src/server/kfoAdmin.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setPrivateResponse(res);

@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { createAdminSession, ensureWriteOrigin, setPrivateResponse, verifyAdminPassword } from "../src/server/kfoAdmin";
+import { createAdminSession, ensureWriteOrigin, setPrivateResponse, verifyAdminPassword } from "../src/server/kfoAdmin.js";
 
 const attempts = new Map<string, { count: number; resetAt: number }>();
 
