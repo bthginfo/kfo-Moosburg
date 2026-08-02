@@ -196,14 +196,18 @@ export function ensureWriteOrigin(req: VercelRequest, res: VercelResponse): bool
   return false;
 }
 
+function databaseUrl(): string {
+  return env("DATABASE_URL") || env("moosburg_DATABASE_URL");
+}
+
 function database() {
-  const connectionString = env("DATABASE_URL");
-  if (!connectionString) throw new Error("DATABASE_URL fehlt.");
+  const connectionString = databaseUrl();
+  if (!connectionString) throw new Error("DATABASE_URL oder moosburg_DATABASE_URL fehlt.");
   return neon(connectionString);
 }
 
 export function hasStoreConfiguration(): boolean {
-  return Boolean(env("DATABASE_URL"));
+  return Boolean(databaseUrl());
 }
 
 let schemaReady: Promise<void> | null = null;
@@ -642,7 +646,7 @@ export function apiError(res: VercelResponse, error: unknown): void {
     res.status(503).json({
       error: "setup_required",
       message: "Der Verwaltungsbereich ist noch nicht mit der PostgreSQL-Datenbank verbunden.",
-      missing: ["DATABASE_URL"],
+      missing: ["DATABASE_URL oder moosburg_DATABASE_URL"],
     });
     return;
   }

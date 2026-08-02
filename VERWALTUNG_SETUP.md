@@ -7,7 +7,7 @@ Der Verwaltungsbereich ist unter `/verwaltung` erreichbar. Patientendaten und SM
 1. Im Vercel-Projekt den Bereich **Storage / Marketplace** öffnen.
 2. **Neon Postgres** hinzufügen und eine Datenbank in einer passenden EU-Region anlegen.
 3. Die Datenbank mit dem Projekt und den benötigten Umgebungen (Production, Preview, Development) verbinden.
-4. Prüfen, dass Vercel die Variable `DATABASE_URL` angelegt hat, und anschließend neu deployen.
+4. Prüfen, dass Vercel `DATABASE_URL` oder die projektspezifisch präfixierte Variable `moosburg_DATABASE_URL` angelegt hat, und anschließend neu deployen.
 
 Beim ersten geschützten API-Aufruf legt die Anwendung die benötigten Tabellen und Indizes automatisch an. Es sind keine manuellen SQL-Schritte erforderlich.
 
@@ -19,7 +19,7 @@ Folgende Variablen müssen für Production, Preview und bei Bedarf Development g
 - `ADMIN_SESSION_SECRET`: zufälliger, langer Wert zum Signieren der HttpOnly-Session.
 - `ADMIN_ENCRYPTION_KEY`: separater zufälliger, langer Wert zur AES-256-Verschlüsselung des SMTP-Passworts.
 - `CRON_SECRET`: zufälliger, langer Wert zum Schutz des täglichen Versandlaufs.
-- `DATABASE_URL`: gepoolte PostgreSQL-Verbindungsadresse; wird bei der Neon-Vercel-Integration automatisch gesetzt.
+- `DATABASE_URL` oder `moosburg_DATABASE_URL`: gepoolte PostgreSQL-Verbindungsadresse; wird bei der Neon-Vercel-Integration automatisch gesetzt. Beide Namen werden von der Anwendung erkannt.
 - `MAX_REMINDERS_PER_RUN` (optional): maximales Versandvolumen pro Lauf, Standard `100`.
 
 ## Automatischer Versand
