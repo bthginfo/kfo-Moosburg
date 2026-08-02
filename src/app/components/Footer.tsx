@@ -109,6 +109,13 @@ export function Footer() {
             </p>
             <div className="flex gap-4">
               <Link
+                to="/verwaltung"
+                className="text-[#dceaf5]/35 hover:text-[#dceaf5]/70 text-xs transition-colors"
+                style={{ fontWeight: 300 }}
+              >
+                Praxis-Login
+              </Link>
+              <Link
                 to="/impressum-datenschutz#impressum"
                 className="text-[#dceaf5]/50 hover:text-[#dceaf5] text-sm transition-colors"
                 style={{ fontWeight: 300 }}

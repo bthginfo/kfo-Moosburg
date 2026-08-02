@@ -1,0 +1,77 @@
+.admin-root {
+  --admin-navy: #063255;
+  --admin-ink: #173249;
+  --admin-muted: #5c7282;
+  --admin-line: #d5e3ed;
+  --admin-workspace: #edf7ff;
+  --admin-orange: #f58a07;
+  font-family: "Poppins", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.admin-root *, .admin-root *::before, .admin-root *::after { box-sizing: border-box; }
+.admin-root h1, .admin-root h2, .admin-root h3, .admin-root h4,
+.admin-root p { margin: 0; }
+.admin-root button, .admin-root input, .admin-root select, .admin-root textarea { font: inherit; }
+
+.admin-field {
+  min-height: 42px;
+  border: 1px solid #c9d9e4;
+  border-radius: 11px;
+  background: #fff;
+  color: #173249;
+  padding: 0 13px;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+.admin-field::placeholder { color: #879aaa; }
+.admin-field:hover { border-color: #9fb6c7; }
+.admin-field:focus { border-color: #f58a07; box-shadow: 0 0 0 3px rgba(245, 138, 7, .16); }
+.admin-field:disabled { background: #eef4f7; color: #758794; cursor: not-allowed; }
+.admin-field.admin-field-leading { padding-left: 46px; }
+.admin-field.admin-field-trailing { padding-right: 46px; }
+textarea.admin-field { padding-top: 11px; padding-bottom: 11px; resize: vertical; }
+
+.admin-primary-button,
+.admin-secondary-button,
+.admin-quiet-button,
+.admin-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 11px;
+  font-size: 14px;
+  font-weight: 600;
+  outline: none;
+  transition: transform 150ms ease, background 150ms ease, border-color 150ms ease, box-shadow 150ms ease, color 150ms ease;
+}
+.admin-primary-button { border: 1px solid var(--admin-navy); background: var(--admin-navy); color: white; padding: 0 17px; min-height: 42px; box-shadow: 0 7px 17px rgba(6, 50, 85, .12); }
+.admin-primary-button:hover:not(:disabled) { background: #0b426b; border-color: #0b426b; transform: translateY(-1px); }
+.admin-secondary-button { border: 1px solid #bdcfdb; background: white; color: var(--admin-navy); padding: 0 15px; min-height: 42px; }
+.admin-secondary-button:hover:not(:disabled) { border-color: #7e9bb0; background: #f7fbfe; }
+.admin-quiet-button { border: 1px solid transparent; background: transparent; color: #34536a; padding: 0 10px; min-height: 38px; }
+.admin-quiet-button:hover:not(:disabled) { background: #e4f0f7; color: var(--admin-navy); }
+.admin-icon-button { width: 38px; height: 38px; border: 1px solid #d1e0ea; background: white; color: #49657a; }
+.admin-icon-button:hover:not(:disabled) { color: var(--admin-navy); border-color: #9ab2c3; background: #f6fbff; }
+.admin-primary-button:focus-visible, .admin-secondary-button:focus-visible, .admin-quiet-button:focus-visible, .admin-icon-button:focus-visible { box-shadow: 0 0 0 3px rgba(245, 138, 7, .24); }
+.admin-primary-button:disabled, .admin-secondary-button:disabled, .admin-quiet-button:disabled, .admin-icon-button:disabled { opacity: .54; cursor: not-allowed; transform: none; }
+
+.admin-surface { background: white; border: 1px solid rgba(6, 50, 85, .1); border-radius: 16px; box-shadow: 0 8px 24px rgba(23, 50, 73, .045); }
+.admin-label { display: block; margin-bottom: 7px; color: #28455c; font-size: 13px !important; font-weight: 600 !important; }
+.admin-help { margin-top: 6px !important; color: #657c8c !important; font-size: 12px !important; font-weight: 400 !important; line-height: 1.5 !important; }
+.admin-kicker { color: #668093; font-size: 11px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; }
+
+.admin-spinner { width: 18px; height: 18px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: admin-spin .75s linear infinite; }
+@keyframes admin-spin { to { transform: rotate(360deg); } }
+@keyframes admin-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.admin-enter { animation: admin-rise 280ms ease both; }
+
+.admin-scrollbar { scrollbar-color: #aac1d1 transparent; scrollbar-width: thin; }
+.admin-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+.admin-scrollbar::-webkit-scrollbar-thumb { background: #b2c8d7; border-radius: 6px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-root *, .admin-root *::before, .admin-root *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}

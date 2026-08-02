@@ -5,6 +5,13 @@ import { ImpressumDatenschutzPage } from "./components/pages/ImpressumDatenschut
 
 export const router = createBrowserRouter([
   {
+    path: "/verwaltung/*",
+    lazy: async () => {
+      const { AdminApp } = await import("./admin/AdminApp");
+      return { Component: AdminApp };
+    },
+  },
+  {
     path: "/",
     Component: KFOLayout,
     children: [

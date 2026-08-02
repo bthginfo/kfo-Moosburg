@@ -1,36 +1,25 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import {
+  createAdminSession,
+  ensureWriteOrigin,
+  setPrivateResponse,
+  verifyAdminPassword,
+} from "../src/server/kfoAdmin";
 
 /**
- * Vercel Serverless Function: Admin Password Verification
- *
- * Validates the admin password server-side so it never appears in the frontend bundle.
- *
- * Required Environment Variable in Vercel:
- *   ADMIN_PASSWORD – The admin password
- *
- * Endpoint: POST /api/admin-verify
- * Body: { "password": "..." }
+ * Backwards-compatible login endpoint. New clients use /api/admin-login.
+ * A successful check now creates the same protected HttpOnly session.
  */
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-
-  if (req.method === "OPTIONS") return res.status(200).end();
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
-
-  const adminPassword = process.env.ADMIN_PASSWORD;
-
-  if (!adminPassword) {
-    return res.status(500).json({ error: "ADMIN_PASSWORD not configured" });
+  setPrivateResponse(res);
+  if (req.method !== "POST") return res.status(405).json({ error: "method_not_allowed" });
+  if (!ensureWriteOrigin(req, res)) return;
+  if (!process.env.ADMIN_PASSWORD) {
+    return res.status(503).json({ error: "setup_required", message: "ADMIN_PASSWORD ist noch nicht konfiguriert." });
   }
-
-  const { password } = req.body || {};
-
-  if (!password || password !== adminPassword) {
-    return res.status(401).json({ error: "Invalid password" });
+  if (!verifyAdminPassword(req.body?.password)) {
+    return res.status(401).json({ error: "invalid_credentials", message: "Das Passwort ist nicht korrekt." });
   }
-
+  createAdminSession(res);
   return res.status(200).json({ success: true });
 }
