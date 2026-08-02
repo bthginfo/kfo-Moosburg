@@ -1,9 +1,8 @@
 import { createCipheriv, createDecipheriv, createHmac, createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { google } from "googleapis";
+import { neon } from "@neondatabase/serverless";
 import nodemailer from "nodemailer";
 
-const STORE_SHEET = "KFO_Daten";
 const SESSION_COOKIE = "kfo_admin_session";
 const SESSION_TTL_SECONDS = 12 * 60 * 60;
 
@@ -197,53 +196,106 @@ export function ensureWriteOrigin(req: VercelRequest, res: VercelResponse): bool
   return false;
 }
 
-async function googleSheets() {
-  const email = env("GOOGLE_SERVICE_ACCOUNT_EMAIL");
-  let key = env("GOOGLE_SERVICE_ACCOUNT_KEY");
-  if (!email || !key) throw new Error("GOOGLE_SERVICE_ACCOUNT_EMAIL oder GOOGLE_SERVICE_ACCOUNT_KEY fehlt.");
-  key = key.replace(/\\n/g, "\n");
-  const auth = new google.auth.JWT({
-    email,
-    key,
-    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-  });
-  await auth.authorize();
-  return google.sheets({ version: "v4", auth });
-}
-
-function sheetId(): string {
-  const value = env("KFO_ADMIN_SHEET_ID");
-  if (!value) throw new Error("KFO_ADMIN_SHEET_ID fehlt.");
-  return value;
+function database() {
+  const connectionString = env("DATABASE_URL");
+  if (!connectionString) throw new Error("DATABASE_URL fehlt.");
+  return neon(connectionString);
 }
 
 export function hasStoreConfiguration(): boolean {
-  return Boolean(env("KFO_ADMIN_SHEET_ID") && env("GOOGLE_SERVICE_ACCOUNT_EMAIL") && env("GOOGLE_SERVICE_ACCOUNT_KEY"));
+  return Boolean(env("DATABASE_URL"));
 }
 
-async function ensureStoreSheet(): Promise<ReturnType<typeof googleSheets> extends Promise<infer T> ? T : never> {
-  const sheets = await googleSheets();
-  const spreadsheetId = sheetId();
-  const metadata = await sheets.spreadsheets.get({ spreadsheetId, fields: "sheets.properties.title" });
-  const exists = metadata.data.sheets?.some((sheet) => sheet.properties?.title === STORE_SHEET);
-  if (!exists) {
-    try {
-      await sheets.spreadsheets.batchUpdate({
-        spreadsheetId,
-        requestBody: { requests: [{ addSheet: { properties: { title: STORE_SHEET, gridProperties: { frozenRowCount: 1 } } } }] },
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "";
-      if (!message.toLowerCase().includes("already exists")) throw error;
-    }
-    await sheets.spreadsheets.values.update({
-      spreadsheetId,
-      range: `'${STORE_SHEET}'!A1:E1`,
-      valueInputOption: "RAW",
-      requestBody: { values: [["Bereich", "ID", "Vorgang", "Daten_JSON", "Aktualisiert"]] },
-    });
-  }
-  return sheets;
+let schemaReady: Promise<void> | null = null;
+
+async function ensureSchema(): Promise<void> {
+  if (schemaReady) return schemaReady;
+  schemaReady = (async () => {
+    const sql = database();
+    await sql.transaction([
+      sql`CREATE TABLE IF NOT EXISTS kfo_customers (
+        id TEXT PRIMARY KEY,
+        salutation TEXT NOT NULL DEFAULT '',
+        first_name TEXT NOT NULL,
+        last_name TEXT NOT NULL,
+        birth_date DATE,
+        email TEXT NOT NULL DEFAULT '',
+        phone TEXT NOT NULL DEFAULT '',
+        mobile TEXT NOT NULL DEFAULT '',
+        street TEXT NOT NULL DEFAULT '',
+        postal_code TEXT NOT NULL DEFAULT '',
+        city TEXT NOT NULL DEFAULT '',
+        insurance_type TEXT NOT NULL DEFAULT '',
+        insurer TEXT NOT NULL DEFAULT '',
+        patient_number TEXT NOT NULL DEFAULT '',
+        status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'paused', 'completed', 'archived')),
+        notes TEXT NOT NULL DEFAULT '',
+        email_consent BOOLEAN NOT NULL DEFAULT FALSE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )`,
+      sql`CREATE TABLE IF NOT EXISTS kfo_appointments (
+        id TEXT PRIMARY KEY,
+        customer_id TEXT NOT NULL REFERENCES kfo_customers(id) ON DELETE CASCADE,
+        appointment_date DATE NOT NULL,
+        appointment_time TEXT NOT NULL DEFAULT '',
+        appointment_type TEXT NOT NULL DEFAULT '',
+        notes TEXT NOT NULL DEFAULT '',
+        status TEXT NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'completed', 'cancelled')),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )`,
+      sql`CREATE TABLE IF NOT EXISTS kfo_reminder_rules (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        subject TEXT NOT NULL,
+        body TEXT NOT NULL,
+        offset_days INTEGER NOT NULL DEFAULT 0 CHECK (offset_days BETWEEN -365 AND 365),
+        audience TEXT NOT NULL DEFAULT 'all' CHECK (audience IN ('all', 'selected')),
+        enabled BOOLEAN NOT NULL DEFAULT TRUE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )`,
+      sql`CREATE TABLE IF NOT EXISTS kfo_reminder_targets (
+        reminder_id TEXT NOT NULL REFERENCES kfo_reminder_rules(id) ON DELETE CASCADE,
+        customer_id TEXT NOT NULL REFERENCES kfo_customers(id) ON DELETE CASCADE,
+        PRIMARY KEY (reminder_id, customer_id)
+      )`,
+      sql`CREATE TABLE IF NOT EXISTS kfo_smtp_settings (
+        id TEXT PRIMARY KEY CHECK (id = 'smtp'),
+        host TEXT NOT NULL DEFAULT '',
+        port INTEGER NOT NULL DEFAULT 587 CHECK (port BETWEEN 1 AND 65535),
+        security TEXT NOT NULL DEFAULT 'starttls' CHECK (security IN ('ssl', 'starttls', 'none')),
+        username TEXT NOT NULL DEFAULT '',
+        encrypted_password TEXT NOT NULL DEFAULT '',
+        from_name TEXT NOT NULL DEFAULT '',
+        from_email TEXT NOT NULL DEFAULT '',
+        reply_to TEXT NOT NULL DEFAULT '',
+        timezone TEXT NOT NULL DEFAULT 'Europe/Berlin',
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )`,
+      sql`CREATE TABLE IF NOT EXISTS kfo_reminder_deliveries (
+        id TEXT PRIMARY KEY,
+        reminder_id TEXT REFERENCES kfo_reminder_rules(id) ON DELETE SET NULL,
+        appointment_id TEXT REFERENCES kfo_appointments(id) ON DELETE SET NULL,
+        customer_id TEXT REFERENCES kfo_customers(id) ON DELETE SET NULL,
+        recipient TEXT NOT NULL,
+        scheduled_date DATE NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('processing', 'sent', 'failed')),
+        sent_at TIMESTAMPTZ,
+        error TEXT NOT NULL DEFAULT '',
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )`,
+      sql`CREATE INDEX IF NOT EXISTS kfo_customers_name_idx ON kfo_customers (last_name, first_name)`,
+      sql`CREATE UNIQUE INDEX IF NOT EXISTS kfo_customers_patient_number_idx ON kfo_customers (patient_number) WHERE patient_number <> ''`,
+      sql`CREATE INDEX IF NOT EXISTS kfo_appointments_date_idx ON kfo_appointments (appointment_date, status)`,
+      sql`CREATE INDEX IF NOT EXISTS kfo_reminder_deliveries_date_idx ON kfo_reminder_deliveries (scheduled_date, status)`,
+    ]);
+  })().catch((error) => {
+    schemaReady = null;
+    throw error;
+  });
+  return schemaReady;
 }
 
 function emptySnapshot(): StoreSnapshot {
@@ -251,59 +303,128 @@ function emptySnapshot(): StoreSnapshot {
 }
 
 export async function loadStore(): Promise<StoreSnapshot> {
-  const sheets = await ensureStoreSheet();
-  const result = await sheets.spreadsheets.values.get({
-    spreadsheetId: sheetId(),
-    range: `'${STORE_SHEET}'!A2:E`,
-  });
-  const latest = new Map<string, StoreEvent>();
-  for (const row of result.data.values || []) {
-    const collection = String(row[0] || "") as Collection;
-    const id = String(row[1] || "");
-    const operation = String(row[2] || "") as StoreEvent["operation"];
-    if (!id || !["customers", "appointments", "reminders", "settings", "deliveries"].includes(collection)) continue;
-    let data: RecordValue | null = null;
-    if (operation !== "delete") {
-      try {
-        data = JSON.parse(String(row[3] || "{}"));
-      } catch {
-        continue;
-      }
-    }
-    latest.set(`${collection}:${id}`, {
-      collection,
-      id,
-      operation: operation === "delete" ? "delete" : "upsert",
-      data,
-      updatedAt: String(row[4] || ""),
-    });
-  }
+  await ensureSchema();
+  const sql = database();
+  const [customerRows, appointmentRows, reminderRows, settingsRows, deliveryRows] = await sql.transaction([
+    sql`SELECT id, salutation, first_name AS "firstName", last_name AS "lastName",
+      birth_date::text AS "birthDate", email, phone, mobile, street, postal_code AS "postalCode", city,
+      insurance_type AS "insuranceType", insurer, patient_number AS "patientNumber", status, notes,
+      email_consent AS "emailConsent", created_at AS "createdAt", updated_at AS "updatedAt"
+      FROM kfo_customers`,
+    sql`SELECT id, customer_id AS "customerId", appointment_date::text AS date,
+      appointment_time AS time, appointment_type AS type, notes, status,
+      created_at AS "createdAt", updated_at AS "updatedAt"
+      FROM kfo_appointments`,
+    sql`SELECT r.id, r.name, r.subject, r.body, r.offset_days AS "offsetDays", r.audience, r.enabled,
+      r.created_at AS "createdAt", r.updated_at AS "updatedAt",
+      COALESCE(array_agg(t.customer_id) FILTER (WHERE t.customer_id IS NOT NULL), ARRAY[]::text[]) AS "customerIds"
+      FROM kfo_reminder_rules r
+      LEFT JOIN kfo_reminder_targets t ON t.reminder_id = r.id
+      GROUP BY r.id`,
+    sql`SELECT id, host, port, security, username, encrypted_password AS "encryptedPassword",
+      from_name AS "fromName", from_email AS "fromEmail", reply_to AS "replyTo", timezone,
+      updated_at AS "updatedAt"
+      FROM kfo_smtp_settings`,
+    sql`SELECT id, COALESCE(reminder_id, '') AS "reminderId", COALESCE(appointment_id, '') AS "appointmentId",
+      COALESCE(customer_id, '') AS "customerId", recipient, scheduled_date::text AS "scheduledDate",
+      status, sent_at AS "sentAt", error, updated_at AS "updatedAt"
+      FROM kfo_reminder_deliveries`,
+  ], { readOnly: true });
   const snapshot = emptySnapshot();
-  for (const event of latest.values()) {
-    if (event.operation === "delete" || !event.data) continue;
-    (snapshot[event.collection] as RecordValue[]).push(event.data);
-  }
+  snapshot.customers = (customerRows as any[]).map((row) => ({ ...row, birthDate: row.birthDate || "", createdAt: timestamp(row.createdAt), updatedAt: timestamp(row.updatedAt) } as Customer));
+  snapshot.appointments = (appointmentRows as any[]).map((row) => ({ ...row, createdAt: timestamp(row.createdAt), updatedAt: timestamp(row.updatedAt) } as Appointment));
+  snapshot.reminders = (reminderRows as any[]).map((row) => ({ ...row, offsetDays: Number(row.offsetDays), customerIds: row.customerIds || [], createdAt: timestamp(row.createdAt), updatedAt: timestamp(row.updatedAt) } as ReminderRule));
+  snapshot.settings = (settingsRows as any[]).map((row) => ({ ...row, port: Number(row.port), updatedAt: timestamp(row.updatedAt) } as SmtpSettings));
+  snapshot.deliveries = (deliveryRows as any[]).map((row) => ({ ...row, sentAt: row.sentAt ? timestamp(row.sentAt) : "", updatedAt: timestamp(row.updatedAt) } as DeliveryLog));
   return snapshot;
 }
 
 export async function appendEvents(events: StoreEvent[]): Promise<void> {
   if (!events.length) return;
-  const sheets = await ensureStoreSheet();
-  await sheets.spreadsheets.values.append({
-    spreadsheetId: sheetId(),
-    range: `'${STORE_SHEET}'!A:E`,
-    valueInputOption: "RAW",
-    insertDataOption: "INSERT_ROWS",
-    requestBody: {
-      values: events.map((event) => [
-        event.collection,
-        event.id,
-        event.operation,
-        event.data ? JSON.stringify(event.data) : "",
-        event.updatedAt,
-      ]),
-    },
-  });
+  await ensureSchema();
+  const sql = database();
+  const queries: any[] = [];
+  for (const event of events) {
+    if (event.operation === "delete") {
+      if (event.collection === "customers") queries.push(sql`DELETE FROM kfo_customers WHERE id = ${event.id}`);
+      if (event.collection === "appointments") queries.push(sql`DELETE FROM kfo_appointments WHERE id = ${event.id}`);
+      if (event.collection === "reminders") queries.push(sql`DELETE FROM kfo_reminder_rules WHERE id = ${event.id}`);
+      if (event.collection === "settings") queries.push(sql`DELETE FROM kfo_smtp_settings WHERE id = ${event.id}`);
+      if (event.collection === "deliveries") queries.push(sql`DELETE FROM kfo_reminder_deliveries WHERE id = ${event.id}`);
+      continue;
+    }
+    if (event.collection === "customers") {
+      const item = event.data as Customer;
+      queries.push(sql`INSERT INTO kfo_customers (
+        id, salutation, first_name, last_name, birth_date, email, phone, mobile, street, postal_code, city,
+        insurance_type, insurer, patient_number, status, notes, email_consent, created_at, updated_at
+      ) VALUES (${item.id}, ${item.salutation}, ${item.firstName}, ${item.lastName}, ${item.birthDate || null},
+        ${item.email}, ${item.phone}, ${item.mobile}, ${item.street}, ${item.postalCode}, ${item.city},
+        ${item.insuranceType}, ${item.insurer}, ${item.patientNumber}, ${item.status}, ${item.notes},
+        ${item.emailConsent}, ${item.createdAt}, ${item.updatedAt})
+      ON CONFLICT (id) DO UPDATE SET salutation = EXCLUDED.salutation, first_name = EXCLUDED.first_name,
+        last_name = EXCLUDED.last_name, birth_date = EXCLUDED.birth_date, email = EXCLUDED.email,
+        phone = EXCLUDED.phone, mobile = EXCLUDED.mobile, street = EXCLUDED.street,
+        postal_code = EXCLUDED.postal_code, city = EXCLUDED.city, insurance_type = EXCLUDED.insurance_type,
+        insurer = EXCLUDED.insurer, patient_number = EXCLUDED.patient_number, status = EXCLUDED.status,
+        notes = EXCLUDED.notes, email_consent = EXCLUDED.email_consent, updated_at = EXCLUDED.updated_at`);
+    }
+    if (event.collection === "appointments") {
+      const item = event.data as Appointment;
+      queries.push(sql`INSERT INTO kfo_appointments (
+        id, customer_id, appointment_date, appointment_time, appointment_type, notes, status, created_at, updated_at
+      ) VALUES (${item.id}, ${item.customerId}, ${item.date}, ${item.time}, ${item.type}, ${item.notes},
+        ${item.status}, ${item.createdAt}, ${item.updatedAt})
+      ON CONFLICT (id) DO UPDATE SET customer_id = EXCLUDED.customer_id,
+        appointment_date = EXCLUDED.appointment_date, appointment_time = EXCLUDED.appointment_time,
+        appointment_type = EXCLUDED.appointment_type, notes = EXCLUDED.notes, status = EXCLUDED.status,
+        updated_at = EXCLUDED.updated_at`);
+    }
+    if (event.collection === "reminders") {
+      const item = event.data as ReminderRule;
+      queries.push(sql`INSERT INTO kfo_reminder_rules (
+        id, name, subject, body, offset_days, audience, enabled, created_at, updated_at
+      ) VALUES (${item.id}, ${item.name}, ${item.subject}, ${item.body}, ${item.offsetDays}, ${item.audience},
+        ${item.enabled}, ${item.createdAt}, ${item.updatedAt})
+      ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, subject = EXCLUDED.subject, body = EXCLUDED.body,
+        offset_days = EXCLUDED.offset_days, audience = EXCLUDED.audience, enabled = EXCLUDED.enabled,
+        updated_at = EXCLUDED.updated_at`);
+      queries.push(sql`DELETE FROM kfo_reminder_targets WHERE reminder_id = ${item.id}`);
+      for (const customerId of item.customerIds) {
+        queries.push(sql`INSERT INTO kfo_reminder_targets (reminder_id, customer_id)
+          VALUES (${item.id}, ${customerId}) ON CONFLICT DO NOTHING`);
+      }
+    }
+    if (event.collection === "settings") {
+      const item = event.data as SmtpSettings;
+      queries.push(sql`INSERT INTO kfo_smtp_settings (
+        id, host, port, security, username, encrypted_password, from_name, from_email, reply_to, timezone, updated_at
+      ) VALUES (${item.id}, ${item.host}, ${item.port}, ${item.security}, ${item.username},
+        ${item.encryptedPassword}, ${item.fromName}, ${item.fromEmail}, ${item.replyTo}, ${item.timezone}, ${item.updatedAt})
+      ON CONFLICT (id) DO UPDATE SET host = EXCLUDED.host, port = EXCLUDED.port, security = EXCLUDED.security,
+        username = EXCLUDED.username, encrypted_password = EXCLUDED.encrypted_password,
+        from_name = EXCLUDED.from_name, from_email = EXCLUDED.from_email, reply_to = EXCLUDED.reply_to,
+        timezone = EXCLUDED.timezone, updated_at = EXCLUDED.updated_at`);
+    }
+    if (event.collection === "deliveries") {
+      const item = event.data as DeliveryLog;
+      queries.push(sql`INSERT INTO kfo_reminder_deliveries (
+        id, reminder_id, appointment_id, customer_id, recipient, scheduled_date, status, sent_at, error, updated_at
+      ) VALUES (${item.id}, ${item.reminderId || null}, ${item.appointmentId || null}, ${item.customerId || null},
+        ${item.recipient}, ${item.scheduledDate}, ${item.status}, ${item.sentAt || null}, ${item.error}, ${item.updatedAt})
+      ON CONFLICT (id) DO UPDATE SET reminder_id = EXCLUDED.reminder_id, appointment_id = EXCLUDED.appointment_id,
+        customer_id = EXCLUDED.customer_id, recipient = EXCLUDED.recipient,
+        scheduled_date = EXCLUDED.scheduled_date, status = EXCLUDED.status,
+        sent_at = EXCLUDED.sent_at, error = EXCLUDED.error, updated_at = EXCLUDED.updated_at`);
+    }
+  }
+  if (queries.length) await sql.transaction(queries);
+}
+
+function timestamp(value: unknown): string {
+  if (!value) return "";
+  const date = value instanceof Date ? value : new Date(String(value));
+  return Number.isNaN(date.getTime()) ? String(value) : date.toISOString();
 }
 
 export function upsertEvent(collection: Collection, record: RecordValue): StoreEvent {
@@ -495,21 +616,37 @@ export function customerWithAppointments(customer: Customer, appointments: Appoi
 
 export function isStorageSetupError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error || "");
-  return message.includes("KFO_ADMIN_SHEET_ID") || message.includes("GOOGLE_SERVICE_ACCOUNT");
+  return message.includes("DATABASE_URL");
 }
 
 export function apiError(res: VercelResponse, error: unknown): void {
-  console.error("KFO admin API error", error);
-  const message = error instanceof Error ? error.message : "Unbekannter Serverfehler";
+  const databaseCode = typeof error === "object" && error && "code" in error ? String((error as { code?: unknown }).code || "") : "";
+  console.error("KFO admin API error", { name: error instanceof Error ? error.name : "UnknownError", code: databaseCode || "unknown" });
+  if (databaseCode === "23505") {
+    res.status(409).json({ error: "duplicate_record", message: "Ein Datensatz mit dieser Patienten- oder Referenznummer existiert bereits." });
+    return;
+  }
+  if (databaseCode === "23503") {
+    res.status(409).json({ error: "related_record_missing", message: "Ein verknüpfter Datensatz wurde zwischenzeitlich geändert. Bitte laden Sie die Seite neu." });
+    return;
+  }
+  if (databaseCode === "EAUTH") {
+    res.status(502).json({ error: "smtp_auth_failed", message: "Der SMTP-Server hat die Zugangsdaten abgelehnt." });
+    return;
+  }
+  if (["ECONNECTION", "ETIMEDOUT", "ESOCKET", "ECONNREFUSED"].includes(databaseCode)) {
+    res.status(502).json({ error: "smtp_connection_failed", message: "Der SMTP-Server konnte nicht sicher erreicht werden." });
+    return;
+  }
   if (isStorageSetupError(error)) {
     res.status(503).json({
       error: "setup_required",
-      message: "Der Verwaltungsbereich ist noch nicht vollständig mit dem Datenspeicher verbunden.",
-      missing: ["KFO_ADMIN_SHEET_ID", "GOOGLE_SERVICE_ACCOUNT_EMAIL", "GOOGLE_SERVICE_ACCOUNT_KEY"],
+      message: "Der Verwaltungsbereich ist noch nicht mit der PostgreSQL-Datenbank verbunden.",
+      missing: ["DATABASE_URL"],
     });
     return;
   }
-  res.status(500).json({ error: "server_error", message });
+  res.status(500).json({ error: "server_error", message: "Die Anfrage konnte serverseitig nicht verarbeitet werden." });
 }
 
 export function newId(): string {

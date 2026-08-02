@@ -50,8 +50,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         type: row.appointmentType,
       }] : []), customer.id, store.appointments.filter((item) => item.customerId === customer.id));
       for (const appointment of appointments) events.push(upsertEvent("appointments", appointment));
-      if (duplicate && strategy === "update") result.updated += 1;
-      else result.imported += 1;
+      if (duplicate && strategy === "update") {
+        Object.assign(duplicate, customer);
+        result.updated += 1;
+      } else {
+        store.customers.push(customer);
+        result.imported += 1;
+      }
     }
 
     await appendEvents(events);
