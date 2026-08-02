@@ -72,6 +72,35 @@ textarea.admin-field { padding-top: 11px; padding-bottom: 11px; resize: vertical
 .admin-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
 .admin-scrollbar::-webkit-scrollbar-thumb { background: #b2c8d7; border-radius: 6px; }
 
+.admin-work-dialog {
+  display: flex !important;
+  width: calc(100vw - 48px) !important;
+  max-height: 94vh;
+  max-height: 94dvh;
+}
+.admin-reminder-dialog { max-width: 1280px !important; }
+.admin-customer-dialog { max-width: 1200px !important; }
+.admin-dialog-scroll {
+  scrollbar-gutter: stable;
+  scrollbar-color: #93b1c4 #edf4f8;
+  scrollbar-width: thin;
+}
+.admin-dialog-scroll::-webkit-scrollbar { width: 10px; }
+.admin-dialog-scroll::-webkit-scrollbar-track { background: #edf4f8; border-left: 1px solid #e0ebf1; }
+.admin-dialog-scroll::-webkit-scrollbar-thumb { background: #93b1c4; border: 2px solid #edf4f8; border-radius: 8px; }
+
+@media (max-width: 639px) {
+  .admin-work-dialog {
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+    height: calc(100vh - 16px);
+    height: calc(100dvh - 16px);
+    max-height: calc(100vh - 16px);
+    max-height: calc(100dvh - 16px);
+    border-radius: 14px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .admin-root *, .admin-root *::before, .admin-root *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }

@@ -65,7 +65,19 @@ export const adminApi = {
     }),
   settings: () => request<SmtpSettings>("/api/admin-settings"),
   saveSettings: (settings: SmtpSettings & { password?: string }) =>
-    request<SmtpSettings>("/api/admin-settings", { method: "PATCH", body: JSON.stringify(settings) }),
+    request<SmtpSettings>("/api/admin-settings", {
+      method: "PATCH",
+      body: JSON.stringify({
+        host: settings.host,
+        port: settings.port,
+        security: settings.security,
+        username: settings.username,
+        password: settings.password,
+        fromName: settings.senderName,
+        fromEmail: settings.senderEmail,
+        replyTo: settings.replyToEmail || "",
+      }),
+    }),
   testConnection: (recipient: string) =>
     request<{ success: boolean; message?: string }>("/api/admin-settings/test", {
       method: "POST",

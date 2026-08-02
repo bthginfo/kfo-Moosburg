@@ -4,7 +4,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "../../components/ui/dialog";
@@ -69,34 +68,34 @@ export function CustomerDialog({ open, customer, saving, onOpenChange, onSave }:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="admin-root admin-scrollbar flex max-h-[92vh] max-w-[900px] flex-col gap-0 overflow-hidden rounded-[18px] border-[#bdd1de] bg-white p-0 shadow-[0_30px_80px_rgba(4,35,58,.24)]">
+      <DialogContent className="admin-root admin-work-dialog admin-customer-dialog flex-col gap-0 overflow-hidden rounded-[18px] border-[#bdd1de] bg-white p-0 shadow-[0_30px_80px_rgba(4,35,58,.24)]">
         <DialogHeader className="border-b border-[#deebf2] px-5 py-5 pr-14 text-left sm:px-7">
           <div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[#e7f3fa] text-[#063255]"><UserRound className="h-5 w-5" /></span><div><DialogTitle className="!text-[18px] !font-semibold !leading-6 !text-[#173249]">{customer ? "Kund:in bearbeiten" : "Neue Kund:in anlegen"}</DialogTitle><DialogDescription className="mt-0.5 !text-[12px] !text-[#667c8b]">Stammdaten und Termine sicher erfassen</DialogDescription></div></div>
         </DialogHeader>
         <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
-          <div className="admin-scrollbar flex-1 overflow-y-auto px-5 py-6 sm:px-7">
+          <div className="admin-scrollbar admin-dialog-scroll min-h-0 flex-1 overflow-y-auto px-5 py-6 sm:px-7 lg:px-8">
             <Section title="Persönliche Angaben" description="Name und Kontaktdaten der Patientin oder des Patienten">
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-12">
                 <Field label="Anrede" className="lg:col-span-2"><select className="admin-field w-full" value={draft.salutation} onChange={(e) => set("salutation", e.target.value)}><option value="">Keine Angabe</option><option>Frau</option><option>Herr</option><option>Divers</option></select></Field>
-                <Field label="Vorname *" className="lg:col-span-2"><input className="admin-field w-full" value={draft.firstName} onChange={(e) => set("firstName", e.target.value)} /></Field>
-                <Field label="Nachname *" className="lg:col-span-2"><input className="admin-field w-full" value={draft.lastName} onChange={(e) => set("lastName", e.target.value)} /></Field>
-                <Field label="Geburtsdatum" className="lg:col-span-2"><input type="date" className="admin-field w-full" value={draft.birthDate} onChange={(e) => set("birthDate", e.target.value)} /></Field>
-                <Field label="E-Mail" className="lg:col-span-4"><input type="email" className="admin-field w-full" value={draft.email} onChange={(e) => set("email", e.target.value)} placeholder="name@beispiel.de" /></Field>
+                <Field label="Vorname *" className="lg:col-span-3"><input className="admin-field w-full" value={draft.firstName} onChange={(e) => set("firstName", e.target.value)} /></Field>
+                <Field label="Nachname *" className="lg:col-span-4"><input className="admin-field w-full" value={draft.lastName} onChange={(e) => set("lastName", e.target.value)} /></Field>
+                <Field label="Geburtsdatum" className="lg:col-span-3"><input type="date" className="admin-field w-full" value={draft.birthDate} onChange={(e) => set("birthDate", e.target.value)} /></Field>
+                <Field label="E-Mail" className="lg:col-span-6"><input type="email" className="admin-field w-full" value={draft.email} onChange={(e) => set("email", e.target.value)} placeholder="name@beispiel.de" /></Field>
                 <Field label="Telefon" className="lg:col-span-3"><input type="tel" className="admin-field w-full" value={draft.phone} onChange={(e) => set("phone", e.target.value)} /></Field>
                 <Field label="Mobil" className="lg:col-span-3"><input type="tel" className="admin-field w-full" value={draft.mobile} onChange={(e) => set("mobile", e.target.value)} /></Field>
-                <Field label="Straße und Hausnummer" className="lg:col-span-3"><input className="admin-field w-full" value={draft.street} onChange={(e) => set("street", e.target.value)} /></Field>
-                <Field label="PLZ" className="lg:col-span-1"><input inputMode="numeric" className="admin-field w-full" value={draft.postalCode} onChange={(e) => set("postalCode", e.target.value)} /></Field>
-                <Field label="Ort" className="lg:col-span-2"><input className="admin-field w-full" value={draft.city} onChange={(e) => set("city", e.target.value)} /></Field>
+                <Field label="Straße und Hausnummer" className="lg:col-span-6"><input className="admin-field w-full" value={draft.street} onChange={(e) => set("street", e.target.value)} /></Field>
+                <Field label="PLZ" className="lg:col-span-2"><input inputMode="numeric" className="admin-field w-full" value={draft.postalCode} onChange={(e) => set("postalCode", e.target.value)} /></Field>
+                <Field label="Ort" className="lg:col-span-4"><input className="admin-field w-full" value={draft.city} onChange={(e) => set("city", e.target.value)} /></Field>
               </div>
             </Section>
 
             <Section title="Praxisdaten" description="Interne Zuordnung und Versicherungsangaben">
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
-                <Field label="Patientennummer" className="lg:col-span-2"><input className="admin-field w-full" value={draft.patientNumber} onChange={(e) => set("patientNumber", e.target.value)} placeholder="z. B. 2026-0042" /></Field>
-                <Field label="Versicherung" className="lg:col-span-2"><input className="admin-field w-full" value={draft.insurer} onChange={(e) => set("insurer", e.target.value)} /></Field>
-                <Field label="Versicherungsart" className="lg:col-span-2"><select className="admin-field w-full" value={draft.insuranceType} onChange={(e) => set("insuranceType", e.target.value as CustomerDraft["insuranceType"])}><option value="gesetzlich">Gesetzlich</option><option value="privat">Privat</option><option value="selbstzahler">Selbstzahler</option></select></Field>
-                <Field label="Status" className="lg:col-span-2"><select className="admin-field w-full" value={draft.status} onChange={(e) => set("status", e.target.value as CustomerDraft["status"])}><option value="active">Aktiv</option><option value="paused">Pausiert</option><option value="completed">Behandlung beendet</option><option value="archived">Archiviert</option></select></Field>
-                <Field label="Interne Notiz" className="lg:col-span-4"><textarea className="admin-field min-h-[80px] w-full" value={draft.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Nur für das Praxisteam sichtbar" /></Field>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-12">
+                <Field label="Patientennummer" className="lg:col-span-3"><input className="admin-field w-full" value={draft.patientNumber} onChange={(e) => set("patientNumber", e.target.value)} placeholder="z. B. 2026-0042" /></Field>
+                <Field label="Versicherung" className="lg:col-span-3"><input className="admin-field w-full" value={draft.insurer} onChange={(e) => set("insurer", e.target.value)} /></Field>
+                <Field label="Versicherungsart" className="lg:col-span-3"><select className="admin-field w-full" value={draft.insuranceType} onChange={(e) => set("insuranceType", e.target.value as CustomerDraft["insuranceType"])}><option value="gesetzlich">Gesetzlich</option><option value="privat">Privat</option><option value="selbstzahler">Selbstzahler</option></select></Field>
+                <Field label="Status" className="lg:col-span-3"><select className="admin-field w-full" value={draft.status} onChange={(e) => set("status", e.target.value as CustomerDraft["status"])}><option value="active">Aktiv</option><option value="paused">Pausiert</option><option value="completed">Behandlung beendet</option><option value="archived">Archiviert</option></select></Field>
+                <Field label="Interne Notiz" className="lg:col-span-12"><textarea className="admin-field min-h-[76px] w-full" value={draft.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Nur für das Praxisteam sichtbar" /></Field>
               </div>
               <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-[12px] border border-[#d5e4ed] bg-[#f7fbfd] px-4 py-3.5">
                 <input type="checkbox" checked={draft.reminderConsent} onChange={(e) => set("reminderConsent", e.target.checked)} className="mt-0.5 h-4 w-4 accent-[#063255]" />
@@ -107,7 +106,7 @@ export function CustomerDialog({ open, customer, saving, onOpenChange, onSave }:
             <Section title="Termine" description="Mehrere zukünftige Termine können getrennt verwaltet werden" noBorder>
               <div className="space-y-3">
                 {draft.appointments.map((appointment, index) => (
-                  <div key={appointment.id ?? index} className="grid gap-3 rounded-[13px] border border-[#dbe7ee] bg-[#fbfdfe] p-3 sm:grid-cols-[1.15fr_.85fr_1.2fr_1.5fr_auto] sm:items-end">
+                  <div key={appointment.id ?? index} className="grid gap-3 rounded-[13px] border border-[#dbe7ee] bg-[#fbfdfe] p-3 md:grid-cols-2 md:items-end lg:grid-cols-[1.15fr_.85fr_1.2fr_1.5fr_auto]">
                     <Field label="Datum"><input type="date" required className="admin-field w-full" value={appointment.date} onChange={(e) => updateAppointment(index, "date", e.target.value)} /></Field>
                     <Field label="Uhrzeit"><input type="time" required className="admin-field w-full" value={appointment.time} onChange={(e) => updateAppointment(index, "time", e.target.value)} /></Field>
                     <Field label="Terminart"><input className="admin-field w-full" value={appointment.type} onChange={(e) => updateAppointment(index, "type", e.target.value)} /></Field>
@@ -120,10 +119,10 @@ export function CustomerDialog({ open, customer, saving, onOpenChange, onSave }:
               <button type="button" onClick={addAppointment} className="admin-secondary-button mt-3 h-10"><CalendarPlus className="h-4 w-4" />Termin hinzufügen</button>
             </Section>
           </div>
-          <DialogFooter className="flex-row items-center justify-between border-t border-[#deebf2] bg-[#fbfdfe] px-5 py-4 sm:px-7">
+          <div className="flex shrink-0 flex-col gap-3 border-t border-[#deebf2] bg-[#fbfdfe] px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
             <div className="min-h-5 flex-1 text-[12px] font-medium text-[#b42318]" role="alert">{error}</div>
-            <div className="flex gap-2"><button type="button" onClick={() => onOpenChange(false)} className="admin-secondary-button h-10">Abbrechen</button><button type="submit" disabled={saving} className="admin-primary-button h-10">{saving ? <span className="admin-spinner h-4 w-4" /> : <Check className="h-4 w-4" />}{saving ? "Wird gespeichert …" : "Speichern"}</button></div>
-          </DialogFooter>
+            <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto"><button type="button" onClick={() => onOpenChange(false)} className="admin-secondary-button h-10">Abbrechen</button><button type="submit" disabled={saving} className="admin-primary-button h-10">{saving ? <span className="admin-spinner h-4 w-4" /> : <Check className="h-4 w-4" />}{saving ? "Wird gespeichert …" : "Speichern"}</button></div>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

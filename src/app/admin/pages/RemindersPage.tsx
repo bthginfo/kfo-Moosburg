@@ -14,52 +14,411 @@ import {
   X,
 } from "lucide-react";
 import { AdminShell } from "../AdminShell";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../../components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "../../components/ui/dialog";
 import type { Customer, ReminderDraft, ReminderRule } from "../types";
 
-type Props = { reminders: ReminderRule[]; customers: Customer[]; onLoggedOut: () => void; onSave: (draft: ReminderDraft) => Promise<void> };
-const placeholders = ["{{vorname}}", "{{nachname}}", "{{termin_datum}}", "{{termin_uhrzeit}}", "{{termin_art}}", "{{praxis_name}}"];
-const emptyDraft: ReminderDraft = { name: "", subject: "Terminerinnerung von {{praxis_name}}", body: "Hallo {{vorname}},\n\nwir möchten Sie freundlich an Ihren Termin am {{termin_datum}} um {{termin_uhrzeit}} Uhr erinnern.\n\nViele Grüße\nIhre {{praxis_name}}", days: 3, relation: "before", enabled: true, audience: "all", customerIds: [], sentCount: 0 };
+type Props = {
+  reminders: ReminderRule[];
+  customers: Customer[];
+  onLoggedOut: () => void;
+  onSave: (draft: ReminderDraft) => Promise<void>;
+};
+
+const placeholders = [
+  "{{vorname}}",
+  "{{nachname}}",
+  "{{termin_datum}}",
+  "{{termin_uhrzeit}}",
+  "{{termin_art}}",
+  "{{praxis_name}}",
+];
+
+const emptyDraft: ReminderDraft = {
+  name: "",
+  subject: "Terminerinnerung von {{praxis_name}}",
+  body: "Hallo {{vorname}},\n\nwir möchten Sie freundlich an Ihren Termin am {{termin_datum}} um {{termin_uhrzeit}} Uhr erinnern.\n\nViele Grüße\nIhre {{praxis_name}}",
+  days: 3,
+  relation: "before",
+  enabled: true,
+  audience: "all",
+  customerIds: [],
+  sentCount: 0,
+};
 
 export function RemindersPage({ reminders, customers, onLoggedOut, onSave }: Props) {
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<ReminderRule | null>(null);
   const [open, setOpen] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
-  const filtered = reminders.filter((rule) => `${rule.name} ${rule.subject}`.toLowerCase().includes(search.toLowerCase()));
-  async function toggle(rule: ReminderRule) { setSavingId(rule.id); try { await onSave({ ...rule, enabled: !rule.enabled }); } finally { setSavingId(null); } }
+  const filtered = reminders.filter((rule) =>
+    `${rule.name} ${rule.subject}`.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  async function toggle(rule: ReminderRule) {
+    setSavingId(rule.id);
+    try {
+      await onSave({ ...rule, enabled: !rule.enabled });
+    } finally {
+      setSavingId(null);
+    }
+  }
 
   return (
-    <AdminShell title="Erinnerungen" eyebrow="Automatischer E-Mail-Versand" description="Erstellen Sie verständliche Regeln, die passend zu Ihren Terminen automatisch versendet werden." onLoggedOut={onLoggedOut} action={<button onClick={() => { setEditing(null); setOpen(true); }} className="admin-primary-button h-[43px] w-full sm:w-auto"><Plus className="h-[18px] w-[18px]" />Neue Erinnerung</button>}>
+    <AdminShell
+      title="Erinnerungen"
+      eyebrow="Automatischer E-Mail-Versand"
+      description="Erstellen Sie verständliche Regeln, die passend zu Ihren Terminen automatisch versendet werden."
+      onLoggedOut={onLoggedOut}
+      action={
+        <button
+          onClick={() => { setEditing(null); setOpen(true); }}
+          className="admin-primary-button h-[43px] w-full sm:w-auto"
+        >
+          <Plus className="h-[18px] w-[18px]" />Neue Erinnerung
+        </button>
+      }
+    >
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(300px,.55fr)]">
         <section className="admin-surface overflow-hidden">
-          <div className="flex flex-col gap-3 border-b border-[#dfebf2] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5"><div className="relative flex-1 sm:max-w-[380px]"><Search className="pointer-events-none absolute left-3.5 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-[#748997]" /><input className="admin-field admin-field-leading w-full" placeholder="Regeln durchsuchen" value={search} onChange={(e) => setSearch(e.target.value)} /></div><span className="text-[11px] text-[#718692]">{reminders.filter((rule) => rule.enabled).length} aktiv · {reminders.length} insgesamt</span></div>
-          {filtered.length ? <div className="divide-y divide-[#e4edf3]">{filtered.map((rule) => <article key={rule.id} className="group px-4 py-4 transition hover:bg-[#f8fbfd] sm:px-5"><div className="flex flex-col gap-4 sm:flex-row sm:items-center"><span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] ${rule.enabled ? "bg-[#e4f3ea] text-[#2d7858]" : "bg-[#edf1f3] text-[#768690]"}`}><BellRing className="h-5 w-5" /></span><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h2 className="!text-[14px] !font-semibold !text-[#234158]">{rule.name}</h2><span className={`rounded-[7px] px-2 py-0.5 text-[9px] font-semibold ${rule.enabled ? "bg-[#e5f5ec] text-[#287052]" : "bg-[#eef1f3] text-[#687781]"}`}>{rule.enabled ? "Aktiv" : "Pausiert"}</span></div><div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-[#657c8b]"><span className="inline-flex items-center gap-1.5"><Clock3 className="h-3.5 w-3.5 text-[#7191a5]" />{rule.days === 0 ? "Am Termintag" : `${rule.days} Tag${rule.days === 1 ? "" : "e"} ${rule.relation === "before" ? "vor" : "nach"} dem Termin`}</span><span className="inline-flex items-center gap-1.5"><UsersRound className="h-3.5 w-3.5 text-[#7191a5]" />{rule.audience === "all" ? "Alle geeigneten Kund:innen" : `${rule.customerIds.length} ausgewählte Kund:innen`}</span><span className="inline-flex items-center gap-1.5"><MailCheck className="h-3.5 w-3.5 text-[#7191a5]" />{rule.sentCount ?? 0} versendet</span></div></div><div className="flex items-center justify-between gap-2 sm:justify-end"><label className="relative inline-flex cursor-pointer items-center"><input type="checkbox" className="peer sr-only" checked={rule.enabled} disabled={savingId === rule.id} onChange={() => toggle(rule)} /><span className="h-6 w-11 rounded-full bg-[#cbd6dd] transition peer-checked:bg-[#2f7c5b] peer-focus-visible:ring-2 peer-focus-visible:ring-[#f58a07] peer-focus-visible:ring-offset-2 after:absolute after:left-[3px] after:top-[3px] after:h-[18px] after:w-[18px] after:rounded-full after:bg-white after:shadow-sm after:transition peer-checked:after:translate-x-5" /><span className="sr-only">{rule.enabled ? "Regel pausieren" : "Regel aktivieren"}</span></label><button onClick={() => { setEditing(rule); setOpen(true); }} className="admin-secondary-button h-9 px-3"><Pencil className="h-3.5 w-3.5" />Bearbeiten</button></div></div></article>)}</div> : <Empty search={Boolean(search)} onCreate={() => { setEditing(null); setOpen(true); }} />}
+          <div className="flex flex-col gap-3 border-b border-[#dfebf2] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+            <div className="relative flex-1 sm:max-w-[380px]">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-[#748997]" />
+              <input
+                className="admin-field admin-field-leading w-full"
+                placeholder="Regeln durchsuchen"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+            </div>
+            <span className="text-[11px] text-[#718692]">
+              {reminders.filter((rule) => rule.enabled).length} aktiv · {reminders.length} insgesamt
+            </span>
+          </div>
+
+          {filtered.length ? (
+            <div className="divide-y divide-[#e4edf3]">
+              {filtered.map((rule) => (
+                <article key={rule.id} className="group px-4 py-4 transition hover:bg-[#f8fbfd] sm:px-5">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                    <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] ${rule.enabled ? "bg-[#e4f3ea] text-[#2d7858]" : "bg-[#edf1f3] text-[#768690]"}`}>
+                      <BellRing className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="!text-[14px] !font-semibold !text-[#234158]">{rule.name}</h2>
+                        <span className={`rounded-[7px] px-2 py-0.5 text-[9px] font-semibold ${rule.enabled ? "bg-[#e5f5ec] text-[#287052]" : "bg-[#eef1f3] text-[#687781]"}`}>
+                          {rule.enabled ? "Aktiv" : "Pausiert"}
+                        </span>
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-[#657c8b]">
+                        <span className="inline-flex items-center gap-1.5">
+                          <Clock3 className="h-3.5 w-3.5 text-[#7191a5]" />
+                          {rule.days === 0 ? "Am Termintag" : `${rule.days} Tag${rule.days === 1 ? "" : "e"} ${rule.relation === "before" ? "vor" : "nach"} dem Termin`}
+                        </span>
+                        <span className="inline-flex items-center gap-1.5">
+                          <UsersRound className="h-3.5 w-3.5 text-[#7191a5]" />
+                          {rule.audience === "all" ? "Alle geeigneten Kund:innen" : `${rule.customerIds.length} ausgewählte Kund:innen`}
+                        </span>
+                        <span className="inline-flex items-center gap-1.5">
+                          <MailCheck className="h-3.5 w-3.5 text-[#7191a5]" />
+                          {rule.sentCount ?? 0} versendet
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between gap-2 sm:justify-end">
+                      <label className="relative inline-flex cursor-pointer items-center">
+                        <input
+                          type="checkbox"
+                          className="peer sr-only"
+                          checked={rule.enabled}
+                          disabled={savingId === rule.id}
+                          onChange={() => toggle(rule)}
+                        />
+                        <span className="h-6 w-11 rounded-full bg-[#cbd6dd] transition peer-checked:bg-[#2f7c5b] peer-focus-visible:ring-2 peer-focus-visible:ring-[#f58a07] peer-focus-visible:ring-offset-2 after:absolute after:left-[3px] after:top-[3px] after:h-[18px] after:w-[18px] after:rounded-full after:bg-white after:shadow-sm after:transition peer-checked:after:translate-x-5" />
+                        <span className="sr-only">{rule.enabled ? "Regel pausieren" : "Regel aktivieren"}</span>
+                      </label>
+                      <button
+                        onClick={() => { setEditing(rule); setOpen(true); }}
+                        className="admin-secondary-button h-9 px-3"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />Bearbeiten
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <Empty search={Boolean(search)} onCreate={() => { setEditing(null); setOpen(true); }} />
+          )}
         </section>
+
         <aside className="space-y-4">
-          <section className="overflow-hidden rounded-[16px] border border-[#174b70] bg-[#063255] p-5 text-white shadow-[0_10px_24px_rgba(6,50,85,.1)]"><span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-white/10 text-[#ffc376]"><Sparkles className="h-5 w-5" /></span><h2 className="mt-5 !text-[16px] !font-semibold !text-white">So läuft der Versand</h2><ol className="mt-4 space-y-4"><InfoStep number="1" text="Das System prüft täglich alle kommenden Termine." /><InfoStep number="2" text="Zeitpunkt, Einwilligung und Zielgruppe werden abgeglichen." /><InfoStep number="3" text="Passende E-Mails werden einmalig über die Praxis versendet." /></ol></section>
-          <section className="admin-surface p-5"><div className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-[#fff0dd] text-[#a95e05]"><Send className="h-[17px] w-[17px]" /></span><div><div className="text-[13px] font-semibold text-[#29465c]">Vor dem ersten Versand</div><div className="text-[10px] text-[#758995]">SMTP-Verbindung testen</div></div></div><a href="/verwaltung/einstellungen" className="mt-4 flex items-center justify-between rounded-[10px] bg-[#f4f9fc] px-3 py-2.5 text-[11px] font-semibold text-[#174b6e] hover:bg-[#eaf4fa]">Zu den E-Mail-Einstellungen<ChevronRight className="h-4 w-4" /></a></section>
+          <section className="overflow-hidden rounded-[16px] border border-[#174b70] bg-[#063255] p-5 text-white shadow-[0_10px_24px_rgba(6,50,85,.1)]">
+            <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-white/10 text-[#ffc376]"><Sparkles className="h-5 w-5" /></span>
+            <h2 className="mt-5 !text-[16px] !font-semibold !text-white">So läuft der Versand</h2>
+            <ol className="mt-4 space-y-4">
+              <InfoStep number="1" text="Das System prüft täglich alle kommenden Termine." />
+              <InfoStep number="2" text="Zeitpunkt, Einwilligung und Zielgruppe werden abgeglichen." />
+              <InfoStep number="3" text="Passende E-Mails werden einmalig über die Praxis versendet." />
+            </ol>
+          </section>
+          <section className="admin-surface p-5">
+            <div className="flex items-center gap-3">
+              <span className="flex h-9 w-9 items-center justify-center rounded-[11px] bg-[#fff0dd] text-[#a95e05]"><Send className="h-[17px] w-[17px]" /></span>
+              <div><div className="text-[13px] font-semibold text-[#29465c]">Vor dem ersten Versand</div><div className="text-[10px] text-[#758995]">SMTP-Verbindung testen</div></div>
+            </div>
+            <a href="/verwaltung/einstellungen" className="mt-4 flex items-center justify-between rounded-[10px] bg-[#f4f9fc] px-3 py-2.5 text-[11px] font-semibold text-[#174b6e] hover:bg-[#eaf4fa]">
+              Zu den E-Mail-Einstellungen<ChevronRight className="h-4 w-4" />
+            </a>
+          </section>
         </aside>
       </div>
+
       <ReminderDialog open={open} reminder={editing} customers={customers} onOpenChange={setOpen} onSave={onSave} />
     </AdminShell>
   );
 }
 
-function ReminderDialog({ open, reminder, customers, onOpenChange, onSave }: { open: boolean; reminder: ReminderRule | null; customers: Customer[]; onOpenChange: (open: boolean) => void; onSave: (draft: ReminderDraft) => Promise<void> }) {
-  const [draft, setDraft] = useState<ReminderDraft>(emptyDraft); const [saving, setSaving] = useState(false); const [error, setError] = useState(""); const [customerSearch, setCustomerSearch] = useState(""); const [multiOpen, setMultiOpen] = useState(false); const [activeField, setActiveField] = useState<"subject" | "body">("body");
-  useEffect(() => { if (open) { setDraft(reminder ? { ...reminder, customerIds: [...reminder.customerIds] } : { ...emptyDraft, customerIds: [] }); setError(""); setCustomerSearch(""); } }, [open, reminder]);
-  const selectable = useMemo(() => customers.filter((customer) => customer.status === "active" && `${customer.firstName} ${customer.lastName} ${customer.email}`.toLowerCase().includes(customerSearch.toLowerCase())), [customers, customerSearch]);
+function ReminderDialog({
+  open,
+  reminder,
+  customers,
+  onOpenChange,
+  onSave,
+}: {
+  open: boolean;
+  reminder: ReminderRule | null;
+  customers: Customer[];
+  onOpenChange: (open: boolean) => void;
+  onSave: (draft: ReminderDraft) => Promise<void>;
+}) {
+  const [draft, setDraft] = useState<ReminderDraft>(emptyDraft);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [multiOpen, setMultiOpen] = useState(false);
+  const [activeField, setActiveField] = useState<"subject" | "body">("body");
+
+  useEffect(() => {
+    if (!open) return;
+    setDraft(reminder ? { ...reminder, customerIds: [...reminder.customerIds] } : { ...emptyDraft, customerIds: [] });
+    setError("");
+    setCustomerSearch("");
+    setMultiOpen(false);
+  }, [open, reminder]);
+
+  const selectable = useMemo(
+    () => customers.filter((customer) =>
+      customer.status === "active" &&
+      `${customer.firstName} ${customer.lastName} ${customer.email}`.toLowerCase().includes(customerSearch.toLowerCase()),
+    ),
+    [customers, customerSearch],
+  );
   const selectedCustomers = customers.filter((customer) => draft.customerIds.includes(customer.id));
-  function set<K extends keyof ReminderDraft>(key: K, value: ReminderDraft[K]) { setDraft((current) => ({ ...current, [key]: value })); }
-  function insert(token: string) { set(activeField, `${draft[activeField]}${draft[activeField].endsWith(" ") || !draft[activeField] ? "" : " "}${token}`); }
-  async function submit(event: FormEvent) { event.preventDefault(); if (!draft.name.trim() || !draft.subject.trim() || !draft.body.trim()) return setError("Bitte füllen Sie Name, Betreff und Nachricht aus."); if (draft.audience === "selected" && !draft.customerIds.length) return setError("Bitte wählen Sie mindestens eine Kund:in aus."); setSaving(true); setError(""); try { await onSave(draft); onOpenChange(false); } catch (caught) { setError(caught instanceof Error ? caught.message : "Die Regel konnte nicht gespeichert werden."); } finally { setSaving(false); } }
+
+  function set<K extends keyof ReminderDraft>(key: K, value: ReminderDraft[K]) {
+    setDraft((current) => ({ ...current, [key]: value }));
+  }
+
+  function insert(token: string) {
+    set(activeField, `${draft[activeField]}${draft[activeField].endsWith(" ") || !draft[activeField] ? "" : " "}${token}`);
+  }
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    if (!draft.name.trim() || !draft.subject.trim() || !draft.body.trim()) {
+      return setError("Bitte füllen Sie Name, Betreff und Nachricht aus.");
+    }
+    if (draft.audience === "selected" && !draft.customerIds.length) {
+      return setError("Bitte wählen Sie mindestens eine Kund:in aus.");
+    }
+    setSaving(true);
+    setError("");
+    try {
+      await onSave(draft);
+      onOpenChange(false);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Die Regel konnte nicht gespeichert werden.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   const preview = renderPreview(draft.body);
-  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="admin-root admin-scrollbar max-h-[94vh] max-w-[1120px] overflow-y-auto rounded-[18px] border-[#bdd1de] bg-white p-0 shadow-[0_30px_80px_rgba(4,35,58,.24)]"><DialogHeader className="border-b border-[#deebf2] px-5 py-5 pr-14 text-left sm:px-7"><DialogTitle className="!text-[18px] !font-semibold !text-[#173249]">{reminder ? "Erinnerung bearbeiten" : "Neue Erinnerung anlegen"}</DialogTitle><DialogDescription className="mt-1 !text-[12px] !text-[#687f8e]">Nachricht, Zeitpunkt und Empfänger:innen festlegen</DialogDescription></DialogHeader><form onSubmit={submit}><div className="grid lg:grid-cols-[minmax(0,1.15fr)_minmax(340px,.85fr)]"><div className="space-y-5 px-5 py-6 sm:px-7"><Field label="Interner Name"><input className="admin-field w-full" value={draft.name} onChange={(e) => set("name", e.target.value)} placeholder="z. B. Kontrolle in 3 Tagen" /></Field><Field label="E-Mail-Betreff"><input className="admin-field w-full" value={draft.subject} onFocus={() => setActiveField("subject")} onChange={(e) => set("subject", e.target.value)} /></Field><Field label="Nachricht"><textarea className="admin-field min-h-[190px] w-full leading-6" value={draft.body} onFocus={() => setActiveField("body")} onChange={(e) => set("body", e.target.value)} /><p className="admin-help">Nur Text und Platzhalter – unsichere HTML-Inhalte werden entfernt.</p></Field><div><div className="admin-label">Personalisieren</div><div className="flex flex-wrap gap-1.5">{placeholders.map((token) => <button type="button" key={token} onClick={() => insert(token)} className="rounded-[8px] border border-[#cbdce7] bg-[#f5f9fb] px-2.5 py-1.5 text-[10px] font-medium text-[#3b5d73] transition hover:border-[#87a8bc] hover:bg-white">{token}</button>)}</div></div><div className="grid grid-cols-[110px_1fr] gap-3"><Field label="Anzahl Tage"><input type="number" min="0" max="365" className="admin-field w-full" value={draft.days} onChange={(e) => set("days", Math.max(0, Number(e.target.value)))} /></Field><Field label="Zeitpunkt"><select className="admin-field w-full" value={draft.relation} onChange={(e) => set("relation", e.target.value as ReminderDraft["relation"])}><option value="before">vor dem Termin</option><option value="after">nach dem Termin</option></select></Field></div><fieldset><legend className="admin-label">Empfänger:innen</legend><div className="grid gap-2 sm:grid-cols-2"><AudienceOption active={draft.audience === "all"} title="Alle geeigneten" text="Mit Termin und Einwilligung" onClick={() => set("audience", "all")} /><AudienceOption active={draft.audience === "selected"} title="Gezielt auswählen" text="Nur bestimmte Kund:innen" onClick={() => set("audience", "selected")} /></div></fieldset>{draft.audience === "selected" && <div className="relative"><div className="admin-label">Ausgewählte Kund:innen <span className="font-normal text-[#7a8d99]">({draft.customerIds.length})</span></div><button type="button" onClick={() => setMultiOpen((value) => !value)} className="admin-field flex min-h-[44px] w-full items-center justify-between text-left"><span className="text-[12px] text-[#536e80]">Kund:innen suchen und auswählen</span><Search className="h-4 w-4 text-[#718895]" /></button>{selectedCustomers.length > 0 && <div className="mt-2 flex flex-wrap gap-1.5">{selectedCustomers.map((customer) => <span key={customer.id} className="inline-flex items-center gap-1 rounded-[8px] bg-[#e5f0f7] px-2 py-1.5 text-[10px] font-medium text-[#234f6d]">{customer.firstName} {customer.lastName}<button type="button" onClick={() => set("customerIds", draft.customerIds.filter((id) => id !== customer.id))} aria-label={`${customer.firstName} ${customer.lastName} entfernen`}><X className="h-3 w-3" /></button></span>)}</div>}{multiOpen && <div className="absolute left-0 right-0 top-[70px] z-20 overflow-hidden rounded-[12px] border border-[#bfd2df] bg-white shadow-[0_14px_32px_rgba(6,50,85,.18)]"><div className="relative border-b border-[#e1ebf1] p-2"><Search className="pointer-events-none absolute left-5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#778d9a]" /><input autoFocus className="admin-field admin-field-leading h-9 w-full" value={customerSearch} onChange={(e) => setCustomerSearch(e.target.value)} placeholder="Name oder E-Mail" /></div><div className="admin-scrollbar max-h-52 overflow-y-auto p-1.5">{selectable.map((customer) => { const active = draft.customerIds.includes(customer.id); return <button type="button" key={customer.id} onClick={() => set("customerIds", active ? draft.customerIds.filter((id) => id !== customer.id) : [...draft.customerIds, customer.id])} className="flex w-full items-center gap-3 rounded-[9px] px-3 py-2 text-left hover:bg-[#eff6fa]"><span className={`flex h-5 w-5 items-center justify-center rounded-[6px] border ${active ? "border-[#063255] bg-[#063255] text-white" : "border-[#b8cad6]"}`}>{active && <Check className="h-3 w-3" />}</span><span className="min-w-0"><span className="block text-[11px] font-semibold text-[#2b495f]">{customer.firstName} {customer.lastName}</span><span className="block truncate text-[9px] text-[#748995]">{customer.email}</span></span></button>; })}</div></div>}</div>}<label className="flex items-center justify-between gap-4 rounded-[13px] border border-[#d4e2eb] bg-[#f8fbfd] px-4 py-3.5"><span><span className="block text-[13px] font-semibold text-[#28465c]">Regel aktivieren</span><span className="mt-0.5 block text-[10px] text-[#758995]">Nach dem Speichern automatisch berücksichtigen</span></span><input type="checkbox" checked={draft.enabled} onChange={(e) => set("enabled", e.target.checked)} className="h-5 w-5 accent-[#2f795a]" /></label></div><aside className="border-t border-[#dce7ee] bg-[#f4f9fc] px-5 py-6 lg:border-l lg:border-t-0 lg:px-6"><div className="sticky top-4"><div className="mb-3 flex items-center justify-between"><div className="admin-kicker">Live-Vorschau</div><span className="rounded-[7px] bg-white px-2 py-1 text-[9px] font-medium text-[#68808f]">E-Mail</span></div><div className="overflow-hidden rounded-[14px] border border-[#cadde8] bg-white shadow-[0_8px_22px_rgba(23,50,73,.07)]"><div className="border-b border-[#e2ebf1] px-4 py-3"><div className="text-[9px] uppercase tracking-[.06em] text-[#8698a3]">Betreff</div><div className="mt-1 text-[11px] font-semibold text-[#29475d]">{renderPreview(draft.subject)}</div></div><div className="min-h-[260px] whitespace-pre-wrap px-5 py-5 text-[11px] leading-6 text-[#405e72]">{preview}</div><div className="border-t border-[#e5edf2] px-5 py-3 text-[9px] text-[#899aa4]">Automatisch versendet durch KFO Moosburg</div></div><div className="mt-4 rounded-[11px] border border-[#d6e4ec] bg-white px-4 py-3 text-[10px] leading-5 text-[#5d7585]"><strong className="font-semibold text-[#34546a]">Geplanter Zeitpunkt:</strong><br />{draft.days === 0 ? "am Tag des Termins" : `${draft.days} Tag${draft.days === 1 ? "" : "e"} ${draft.relation === "before" ? "vor" : "nach"} dem Termin`}</div></div></aside></div>{error && <div className="mx-5 mb-3 rounded-[10px] border border-[#e6aaa5] bg-[#fff2f1] px-4 py-3 text-[11px] font-medium text-[#9c302b] sm:mx-7">{error}</div>}<div className="flex items-center justify-end gap-2 border-t border-[#dce8ef] bg-white px-5 py-4 sm:px-7"><button type="button" onClick={() => onOpenChange(false)} className="admin-secondary-button h-10">Abbrechen</button><button type="submit" disabled={saving} className="admin-primary-button h-10">{saving ? <span className="admin-spinner h-4 w-4" /> : <Check className="h-4 w-4" />}{saving ? "Wird gespeichert …" : "Regel speichern"}</button></div></form></DialogContent></Dialog>;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="admin-root admin-work-dialog admin-reminder-dialog flex-col gap-0 overflow-hidden rounded-[18px] border-[#bdd1de] bg-white p-0 shadow-[0_30px_80px_rgba(4,35,58,.24)]">
+        <DialogHeader className="shrink-0 border-b border-[#deebf2] px-5 py-5 pr-14 text-left sm:px-7">
+          <DialogTitle className="!text-[18px] !font-semibold !text-[#173249]">
+            {reminder ? "Erinnerung bearbeiten" : "Neue Erinnerung anlegen"}
+          </DialogTitle>
+          <DialogDescription className="mt-1 !text-[12px] !text-[#687f8e]">
+            Nachricht, Zeitpunkt und Empfänger:innen festlegen
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="admin-scrollbar admin-dialog-scroll min-h-0 flex-1 overflow-y-auto">
+            <div className="grid lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+              <div className="min-w-0 space-y-5 px-5 py-6 sm:px-7 lg:px-8">
+                <Field label="Interner Name">
+                  <input className="admin-field w-full" value={draft.name} onChange={(event) => set("name", event.target.value)} placeholder="z. B. Kontrolle in 3 Tagen" />
+                </Field>
+                <Field label="E-Mail-Betreff">
+                  <input className="admin-field w-full" value={draft.subject} onFocus={() => setActiveField("subject")} onChange={(event) => set("subject", event.target.value)} />
+                </Field>
+                <Field label="Nachricht">
+                  <textarea className="admin-field min-h-[190px] w-full leading-6" value={draft.body} onFocus={() => setActiveField("body")} onChange={(event) => set("body", event.target.value)} />
+                  <p className="admin-help">Nur Text und Platzhalter – unsichere HTML-Inhalte werden entfernt.</p>
+                </Field>
+
+                <div>
+                  <div className="admin-label">Personalisieren</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {placeholders.map((token) => (
+                      <button type="button" key={token} onClick={() => insert(token)} className="rounded-[8px] border border-[#cbdce7] bg-[#f5f9fb] px-2.5 py-1.5 text-[10px] font-medium text-[#3b5d73] transition hover:border-[#87a8bc] hover:bg-white">
+                        {token}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-3">
+                  <Field label="Anzahl Tage">
+                    <input type="number" min="0" max="365" className="admin-field w-full" value={draft.days} onChange={(event) => set("days", Math.max(0, Number(event.target.value)))} />
+                  </Field>
+                  <Field label="Zeitpunkt">
+                    <select className="admin-field w-full" value={draft.relation} onChange={(event) => set("relation", event.target.value as ReminderDraft["relation"])}>
+                      <option value="before">vor dem Termin</option>
+                      <option value="after">nach dem Termin</option>
+                    </select>
+                  </Field>
+                </div>
+
+                <fieldset>
+                  <legend className="admin-label">Empfänger:innen</legend>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <AudienceOption active={draft.audience === "all"} title="Alle geeigneten" text="Mit Termin und Einwilligung" onClick={() => set("audience", "all")} />
+                    <AudienceOption active={draft.audience === "selected"} title="Gezielt auswählen" text="Nur bestimmte Kund:innen" onClick={() => set("audience", "selected")} />
+                  </div>
+                </fieldset>
+
+                {draft.audience === "selected" && (
+                  <div className="relative">
+                    <div className="admin-label">Ausgewählte Kund:innen <span className="font-normal text-[#7a8d99]">({draft.customerIds.length})</span></div>
+                    <button type="button" onClick={() => setMultiOpen((value) => !value)} className="admin-field flex min-h-[44px] w-full items-center justify-between text-left">
+                      <span className="text-[12px] text-[#536e80]">Kund:innen suchen und auswählen</span><Search className="h-4 w-4 text-[#718895]" />
+                    </button>
+                    {selectedCustomers.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {selectedCustomers.map((customer) => (
+                          <span key={customer.id} className="inline-flex items-center gap-1 rounded-[8px] bg-[#e5f0f7] px-2 py-1.5 text-[10px] font-medium text-[#234f6d]">
+                            {customer.firstName} {customer.lastName}
+                            <button type="button" onClick={() => set("customerIds", draft.customerIds.filter((id) => id !== customer.id))} aria-label={`${customer.firstName} ${customer.lastName} entfernen`}><X className="h-3 w-3" /></button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {multiOpen && (
+                      <div className="absolute left-0 right-0 top-[70px] z-20 overflow-hidden rounded-[12px] border border-[#bfd2df] bg-white shadow-[0_14px_32px_rgba(6,50,85,.18)]">
+                        <div className="relative border-b border-[#e1ebf1] p-2">
+                          <Search className="pointer-events-none absolute left-5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#778d9a]" />
+                          <input autoFocus className="admin-field admin-field-leading h-9 w-full" value={customerSearch} onChange={(event) => setCustomerSearch(event.target.value)} placeholder="Name oder E-Mail" />
+                        </div>
+                        <div className="admin-scrollbar max-h-52 overflow-y-auto p-1.5">
+                          {selectable.map((customer) => {
+                            const active = draft.customerIds.includes(customer.id);
+                            return (
+                              <button type="button" key={customer.id} onClick={() => set("customerIds", active ? draft.customerIds.filter((id) => id !== customer.id) : [...draft.customerIds, customer.id])} className="flex w-full items-center gap-3 rounded-[9px] px-3 py-2 text-left hover:bg-[#eff6fa]">
+                                <span className={`flex h-5 w-5 items-center justify-center rounded-[6px] border ${active ? "border-[#063255] bg-[#063255] text-white" : "border-[#b8cad6]"}`}>{active && <Check className="h-3 w-3" />}</span>
+                                <span className="min-w-0"><span className="block text-[11px] font-semibold text-[#2b495f]">{customer.firstName} {customer.lastName}</span><span className="block truncate text-[9px] text-[#748995]">{customer.email}</span></span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <label className="flex items-center justify-between gap-4 rounded-[13px] border border-[#d4e2eb] bg-[#f8fbfd] px-4 py-3.5">
+                  <span><span className="block text-[13px] font-semibold text-[#28465c]">Regel aktivieren</span><span className="mt-0.5 block text-[10px] text-[#758995]">Nach dem Speichern automatisch berücksichtigen</span></span>
+                  <input type="checkbox" checked={draft.enabled} onChange={(event) => set("enabled", event.target.checked)} className="h-5 w-5 accent-[#2f795a]" />
+                </label>
+              </div>
+
+              <aside className="min-w-0 border-t border-[#dce7ee] bg-[#f4f9fc] px-5 py-6 lg:border-l lg:border-t-0 lg:px-7">
+                <div className="lg:sticky lg:top-6">
+                  <div className="mb-3 flex items-center justify-between"><div className="admin-kicker">Live-Vorschau</div><span className="rounded-[7px] bg-white px-2 py-1 text-[9px] font-medium text-[#68808f]">E-Mail</span></div>
+                  <div className="overflow-hidden rounded-[14px] border border-[#cadde8] bg-white shadow-[0_8px_22px_rgba(23,50,73,.07)]">
+                    <div className="border-b border-[#e2ebf1] px-4 py-3"><div className="text-[9px] uppercase tracking-[.06em] text-[#8698a3]">Betreff</div><div className="mt-1 break-words text-[11px] font-semibold text-[#29475d]">{renderPreview(draft.subject)}</div></div>
+                    <div className="min-h-[260px] whitespace-pre-wrap break-words px-5 py-5 text-[11px] leading-6 text-[#405e72]">{preview}</div>
+                    <div className="border-t border-[#e5edf2] px-5 py-3 text-[9px] text-[#899aa4]">Automatisch versendet durch KFO Moosburg</div>
+                  </div>
+                  <div className="mt-4 rounded-[11px] border border-[#d6e4ec] bg-white px-4 py-3 text-[10px] leading-5 text-[#5d7585]">
+                    <strong className="font-semibold text-[#34546a]">Geplanter Zeitpunkt:</strong><br />
+                    {draft.days === 0 ? "am Tag des Termins" : `${draft.days} Tag${draft.days === 1 ? "" : "e"} ${draft.relation === "before" ? "vor" : "nach"} dem Termin`}
+                  </div>
+                </div>
+              </aside>
+            </div>
+          </div>
+
+          <div className="shrink-0 border-t border-[#dce8ef] bg-white px-5 py-4 sm:px-7">
+            {error && <div className="mb-3 rounded-[10px] border border-[#e6aaa5] bg-[#fff2f1] px-4 py-2.5 text-[11px] font-medium text-[#9c302b]" role="alert">{error}</div>}
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
+              <button type="button" onClick={() => onOpenChange(false)} className="admin-secondary-button h-10">Abbrechen</button>
+              <button type="submit" disabled={saving} className="admin-primary-button h-10">{saving ? <span className="admin-spinner h-4 w-4" /> : <Check className="h-4 w-4" />}{saving ? "Wird gespeichert …" : "Regel speichern"}</button>
+            </div>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) { return <label><span className="admin-label">{label}</span>{children}</label>; }
-function AudienceOption({ active, title, text, onClick }: { active: boolean; title: string; text: string; onClick: () => void }) { return <button type="button" onClick={onClick} className={`flex items-start gap-3 rounded-[12px] border px-3 py-3 text-left transition ${active ? "border-[#356b8d] bg-[#eef7fc] ring-1 ring-[#356b8d]/15" : "border-[#d6e3eb] hover:border-[#9ab4c5]"}`}><span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${active ? "border-[#063255] bg-[#063255]" : "border-[#a9bdca]"}`}>{active && <span className="h-1.5 w-1.5 rounded-full bg-white" />}</span><span><span className="block text-[11px] font-semibold text-[#2b495f]">{title}</span><span className="mt-0.5 block text-[9px] text-[#778b98]">{text}</span></span></button>; }
-function InfoStep({ number, text }: { number: string; text: string }) { return <li className="flex items-start gap-3"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[8px] bg-white/10 text-[10px] font-semibold text-[#ffc376]">{number}</span><span className="pt-0.5 text-[11px] leading-5 text-[#bed1de]">{text}</span></li>; }
-function Empty({ search, onCreate }: { search: boolean; onCreate: () => void }) { return <div className="flex min-h-[420px] flex-col items-center justify-center px-6 text-center"><span className="flex h-14 w-14 items-center justify-center rounded-[16px] bg-[#e6f2f9] text-[#174e72]"><BellRing className="h-7 w-7" /></span><h2 className="mt-4 !text-[16px] !font-semibold !text-[#29465c]">{search ? "Keine passende Regel" : "Noch keine Erinnerung angelegt"}</h2><p className="mt-2 max-w-sm !text-[12px] !font-normal !leading-5 !text-[#718692]">{search ? "Versuchen Sie einen anderen Suchbegriff." : "Erstellen Sie Ihre erste automatische Terminerinnerung – Schritt für Schritt und jederzeit änderbar."}</p>{!search && <button onClick={onCreate} className="admin-primary-button mt-5 h-10"><Plus className="h-4 w-4" />Erste Erinnerung</button>}</div>; }
-function renderPreview(value: string) { return value.replace(/{{vorname}}/g, "Mia").replace(/{{nachname}}/g, "Beispiel").replace(/{{termin_datum}}/g, "18. September 2026").replace(/{{termin_uhrzeit}}/g, "14:30").replace(/{{termin_art}}/g, "Kontrolle").replace(/{{praxis_name}}/g, "KFO Moosburg"); }
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return <label><span className="admin-label">{label}</span>{children}</label>;
+}
+
+function AudienceOption({ active, title, text, onClick }: { active: boolean; title: string; text: string; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} className={`flex items-start gap-3 rounded-[12px] border px-3 py-3 text-left transition ${active ? "border-[#356b8d] bg-[#eef7fc] ring-1 ring-[#356b8d]/15" : "border-[#d6e3eb] hover:border-[#9ab4c5]"}`}>
+      <span className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${active ? "border-[#063255] bg-[#063255]" : "border-[#a9bdca]"}`}>{active && <span className="h-1.5 w-1.5 rounded-full bg-white" />}</span>
+      <span><span className="block text-[11px] font-semibold text-[#2b495f]">{title}</span><span className="mt-0.5 block text-[9px] text-[#778b98]">{text}</span></span>
+    </button>
+  );
+}
+
+function InfoStep({ number, text }: { number: string; text: string }) {
+  return <li className="flex items-start gap-3"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[8px] bg-white/10 text-[10px] font-semibold text-[#ffc376]">{number}</span><span className="pt-0.5 text-[11px] leading-5 text-[#bed1de]">{text}</span></li>;
+}
+
+function Empty({ search, onCreate }: { search: boolean; onCreate: () => void }) {
+  return (
+    <div className="flex min-h-[420px] flex-col items-center justify-center px-6 text-center">
+      <span className="flex h-14 w-14 items-center justify-center rounded-[16px] bg-[#e6f2f9] text-[#174e72]"><BellRing className="h-7 w-7" /></span>
+      <h2 className="mt-4 !text-[16px] !font-semibold !text-[#29465c]">{search ? "Keine passende Regel" : "Noch keine Erinnerung angelegt"}</h2>
+      <p className="mt-2 max-w-sm !text-[12px] !font-normal !leading-5 !text-[#718692]">{search ? "Versuchen Sie einen anderen Suchbegriff." : "Erstellen Sie Ihre erste automatische Terminerinnerung – Schritt für Schritt und jederzeit änderbar."}</p>
+      {!search && <button onClick={onCreate} className="admin-primary-button mt-5 h-10"><Plus className="h-4 w-4" />Erste Erinnerung</button>}
+    </div>
+  );
+}
+
+function renderPreview(value: string) {
+  return value
+    .replace(/{{vorname}}/g, "Mia")
+    .replace(/{{nachname}}/g, "Beispiel")
+    .replace(/{{termin_datum}}/g, "18. September 2026")
+    .replace(/{{termin_uhrzeit}}/g, "14:30")
+    .replace(/{{termin_art}}/g, "Kontrolle")
+    .replace(/{{praxis_name}}/g, "KFO Moosburg");
+}
