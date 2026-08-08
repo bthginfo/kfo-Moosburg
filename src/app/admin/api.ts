@@ -2,8 +2,14 @@ import type {
   AdminSession,
   Customer,
   CustomerDraft,
+  EstimateBundle,
+  EstimateCatalogItem,
+  EstimateDraft,
+  EstimateStatus,
   ReminderDraft,
   ReminderRule,
+  ScheduleBundle,
+  ScheduleEntity,
   SmtpSettings,
 } from "./types";
 
@@ -83,4 +89,52 @@ export const adminApi = {
       method: "POST",
       body: JSON.stringify({ recipient }),
     }),
+  schedule: () => request<ScheduleBundle>("/api/admin-schedule"),
+  saveScheduleEntity: (entity: ScheduleEntity, data: Record<string, unknown>) =>
+    request<ScheduleBundle>("/api/admin-schedule", {
+      method: data.id ? "PATCH" : "POST",
+      body: JSON.stringify({ entity, data }),
+    }),
+  deleteScheduleEntity: (entity: ScheduleEntity, id: string) =>
+    request<ScheduleBundle>("/api/admin-schedule", {
+      method: "DELETE",
+      body: JSON.stringify({ entity, id }),
+    }),
+  estimates: () => request<EstimateBundle>("/api/admin-estimates"),
+  saveEstimate: (data: EstimateDraft) =>
+    request<EstimateBundle>("/api/admin-estimates", {
+      method: data.id ? "PATCH" : "POST",
+      body: JSON.stringify({ entity: "estimate", data }),
+    }),
+  saveEstimateCatalogItem: (data: Partial<EstimateCatalogItem>) =>
+    request<EstimateBundle>("/api/admin-estimates", {
+      method: data.id ? "PATCH" : "POST",
+      body: JSON.stringify({ entity: "catalogItem", data }),
+    }),
+  updateEstimateStatus: (id: string, status: EstimateStatus) =>
+    request<EstimateBundle>("/api/admin-estimates", {
+      method: "POST",
+      body: JSON.stringify({ action: "status", id, status }),
+    }),
+  duplicateEstimate: (id: string) =>
+    request<EstimateBundle>("/api/admin-estimates", {
+      method: "POST",
+      body: JSON.stringify({ action: "duplicate", id }),
+    }),
+  sendEstimate: (id: string) =>
+    request<EstimateBundle>("/api/admin-estimates", {
+      method: "POST",
+      body: JSON.stringify({ action: "send", id }),
+    }),
+  archiveEstimate: (id: string) =>
+    request<EstimateBundle>("/api/admin-estimates", {
+      method: "DELETE",
+      body: JSON.stringify({ entity: "estimate", id }),
+    }),
+  archiveEstimateCatalogItem: (id: string) =>
+    request<EstimateBundle>("/api/admin-estimates", {
+      method: "DELETE",
+      body: JSON.stringify({ entity: "catalogItem", id }),
+    }),
+  estimatePrintUrl: (id: string) => `/api/admin-estimates?action=print&id=${encodeURIComponent(id)}`,
 };

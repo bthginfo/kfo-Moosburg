@@ -2,8 +2,10 @@ import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import {
   BellRing,
+  CalendarDays,
   CalendarClock,
   ChevronRight,
+  FileText,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -15,10 +17,12 @@ import { BrandMark } from "./AdminLogin";
 import { adminApi } from "./api";
 
 const navigation = [
-  { to: "/verwaltung", label: "Übersicht", icon: LayoutDashboard, exact: true },
-  { to: "/verwaltung/kunden", label: "Kund:innen", icon: UsersRound },
-  { to: "/verwaltung/erinnerungen", label: "Erinnerungen", icon: BellRing },
-  { to: "/verwaltung/einstellungen", label: "Einstellungen", icon: Settings },
+  { to: "/verwaltung", label: "Übersicht", mobileLabel: "Übersicht", icon: LayoutDashboard, exact: true },
+  { to: "/verwaltung/termine", label: "Termine", mobileLabel: "Termine", icon: CalendarDays },
+  { to: "/verwaltung/kunden", label: "Kund:innen", mobileLabel: "Kund:innen", icon: UsersRound },
+  { to: "/verwaltung/kostenvoranschlaege", label: "Kostenvoranschläge", mobileLabel: "KV", icon: FileText },
+  { to: "/verwaltung/erinnerungen", label: "Erinnerungen", mobileLabel: "Erinner.", icon: BellRing },
+  { to: "/verwaltung/einstellungen", label: "Einstellungen", mobileLabel: "Einstell.", icon: Settings },
 ];
 
 type Props = {
@@ -127,11 +131,11 @@ export function AdminShell({ children, title, eyebrow, description, action, onLo
         </div>
       )}
 
-      <nav className="fixed inset-x-3 bottom-3 z-30 grid h-[66px] grid-cols-4 rounded-[17px] border border-[#c9d9e4] bg-white px-1.5 shadow-[0_12px_35px_rgba(6,50,85,.18)] lg:hidden" aria-label="Schnellnavigation">
-        {navigation.map((item) => {
+      <nav className="fixed inset-x-3 bottom-3 z-30 grid h-[70px] grid-cols-5 rounded-[17px] border border-[#c9d9e4] bg-white px-1.5 shadow-[0_12px_35px_rgba(6,50,85,.18)] lg:hidden" aria-label="Schnellnavigation">
+        {navigation.filter((item) => item.to !== "/verwaltung/einstellungen").map((item) => {
           const active = item.exact ? location.pathname === item.to : location.pathname.startsWith(item.to);
           const Icon = item.icon;
-          return <Link key={item.to} to={item.to} className={`flex flex-col items-center justify-center gap-1 rounded-[13px] text-[10px] font-medium ${active ? "text-[#063255]" : "text-[#6e8290]"}`}><Icon className={`h-5 w-5 ${active ? "text-[#f58a07]" : ""}`} /><span>{item.label}</span></Link>;
+          return <Link key={item.to} to={item.to} className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-[13px] text-[11px] font-medium ${active ? "text-[#063255]" : "text-[#6e8290]"}`}><Icon className={`h-5 w-5 ${active ? "text-[#f58a07]" : ""}`} /><span className="max-w-full truncate">{item.mobileLabel}</span></Link>;
         })}
       </nav>
     </div>

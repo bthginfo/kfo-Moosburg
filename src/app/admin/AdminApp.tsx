@@ -8,6 +8,8 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { CustomersPage } from "./pages/CustomersPage";
 import { RemindersPage } from "./pages/RemindersPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { SchedulePage } from "./pages/SchedulePage";
+import { EstimatesPage } from "./pages/EstimatesPage";
 import type { Customer, CustomerDraft, ReminderDraft, ReminderRule, SmtpSettings } from "./types";
 import "./admin.css";
 
@@ -80,6 +82,8 @@ export function AdminApp() {
   let page: React.ReactNode;
   if (location.pathname === "/verwaltung" || location.pathname === "/verwaltung/") page = <DashboardPage customers={customers} reminders={reminders} onLoggedOut={logout} onAddCustomer={() => navigate("/verwaltung/kunden?neu=1")} />;
   else if (location.pathname.startsWith("/verwaltung/kunden")) page = <CustomersPage customers={customers} onLoggedOut={logout} onSave={saveCustomer} onRefresh={loadData} />;
+  else if (location.pathname.startsWith("/verwaltung/termine")) page = <SchedulePage customers={customers} onLoggedOut={logout} />;
+  else if (location.pathname.startsWith("/verwaltung/kostenvoranschlaege")) page = <EstimatesPage customers={customers} onLoggedOut={logout} />;
   else if (location.pathname.startsWith("/verwaltung/erinnerungen")) page = <RemindersPage reminders={reminders} customers={customers} onLoggedOut={logout} onSave={saveReminder} />;
   else if (location.pathname.startsWith("/verwaltung/einstellungen")) page = <SettingsPage settings={settings} onLoggedOut={logout} onSave={saveSettings} onTest={adminApi.testConnection} />;
   else page = <Navigate to="/verwaltung" replace />;

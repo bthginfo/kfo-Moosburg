@@ -37,7 +37,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     for (const rule of store.reminders.filter((item) => item.enabled)) {
       for (const appointment of store.appointments) {
-        if (appointment.status === "cancelled" || addDays(appointment.date, rule.offsetDays) !== today) continue;
+        if (!["scheduled", "confirmed"].includes(appointment.status) || addDays(appointment.date, rule.offsetDays) !== today) continue;
         const customer = customers.get(appointment.customerId);
         if (!customer || customer.status !== "active" || !customer.emailConsent || !customer.email) continue;
         if (rule.audience === "selected" && !rule.customerIds.includes(customer.id)) continue;

@@ -83,6 +83,11 @@ textarea.admin-field { padding-top: 11px; padding-bottom: 11px; resize: vertical
 }
 .admin-reminder-dialog { max-width: 1280px !important; }
 .admin-customer-dialog { max-width: 1200px !important; }
+.admin-schedule-dialog { max-width: 920px !important; }
+.admin-schedule-small-dialog { max-width: 660px !important; }
+.admin-estimate-dialog { max-width: 1320px !important; }
+.admin-estimate-detail-dialog { max-width: 1060px !important; }
+.admin-catalog-dialog { max-width: 720px !important; }
 .admin-dialog-scroll {
   scrollbar-gutter: stable;
   scrollbar-color: #93b1c4 #edf4f8;
@@ -91,6 +96,27 @@ textarea.admin-field { padding-top: 11px; padding-bottom: 11px; resize: vertical
 .admin-dialog-scroll::-webkit-scrollbar { width: 10px; }
 .admin-dialog-scroll::-webkit-scrollbar-track { background: #edf4f8; border-left: 1px solid #e0ebf1; }
 .admin-dialog-scroll::-webkit-scrollbar-thumb { background: #93b1c4; border: 2px solid #edf4f8; border-radius: 8px; }
+
+:is(.schedule-page, .admin-schedule-dialog, .admin-schedule-small-dialog) [class~="text-[8px]"],
+:is(.schedule-page, .admin-schedule-dialog, .admin-schedule-small-dialog) [class~="text-[9px]"] {
+  font-size: 12px !important;
+}
+:is(.schedule-page, .admin-schedule-dialog, .admin-schedule-small-dialog) [class~="text-[10px]"],
+:is(.schedule-page, .admin-schedule-dialog, .admin-schedule-small-dialog) [class~="text-[11px]"] {
+  font-size: 12px !important;
+}
+:is(.schedule-page, .schedule-ui, .admin-schedule-dialog, .admin-schedule-small-dialog) .admin-icon-button {
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px;
+  min-height: 42px;
+}
+:is(.estimate-page, .estimate-ui, .admin-estimate-dialog, .admin-estimate-detail-dialog, .admin-catalog-dialog) .admin-icon-button {
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px;
+  min-height: 42px;
+}
 
 @media (max-width: 639px) {
   .admin-field.admin-message-editor { min-height: 240px; }

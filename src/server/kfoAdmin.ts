@@ -15,7 +15,7 @@ export interface Appointment {
   time: string;
   type: string;
   notes: string;
-  status: "scheduled" | "completed" | "cancelled";
+  status: "scheduled" | "confirmed" | "arrived" | "completed" | "cancelled" | "no_show";
   createdAt: string;
   updatedAt: string;
 }
@@ -492,7 +492,7 @@ export function normalizeAppointments(input: any, customerId: string, existing: 
   return values
     .map((item) => {
       const old = item?.id ? byId.get(String(item.id)) : undefined;
-      const status = ["scheduled", "completed", "cancelled"].includes(item?.status) ? item.status : "scheduled";
+      const status = ["scheduled", "confirmed", "arrived", "completed", "cancelled", "no_show"].includes(item?.status) ? item.status : "scheduled";
       return {
         id: old?.id || cleanText(item?.id, 100) || randomUUID(),
         customerId,
