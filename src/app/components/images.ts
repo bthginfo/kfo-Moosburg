@@ -3,7 +3,7 @@
 export const IMAGE_FALLBACK = "/kfo-fallback.svg";
 
 export const IMAGES = {
-  hero: "/site-snapshot/hero.webp",
+  hero: "/site-snapshot/hero-2026-08-v2.webp",
   teamGroup: "/site-snapshot/team-group.webp",
   serviceRemovable: "/site-snapshot/service-removable.webp",
   serviceFixed: "/site-snapshot/service-fixed.webp",
