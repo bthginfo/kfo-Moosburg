@@ -12,12 +12,12 @@ import {
   loadStore,
   quarantineStaleReminderDeliveries,
   revalidateClaimedReminderDelivery,
-  reminderHtml,
   renderTemplate,
   requireAdmin,
   setPrivateResponse,
   type DeliveryLog,
 } from "../../src/server/kfoAdmin.js";
+import { practiceMail } from "../../src/server/kfoMail.js";
 
 export const maxDuration = 60;
 
@@ -112,13 +112,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       try {
         const subject = renderTemplate(current.rule.subject, current.customer, current.appointment);
         const body = renderTemplate(current.rule.body, current.customer, current.appointment);
+        const mail = practiceMail({ subject, body, eyebrow: "Terminerinnerung" });
         await transport.sendMail({
           from: { name: settings.fromName, address: settings.fromEmail },
           to: current.customer.email,
           replyTo: settings.replyTo || undefined,
           subject,
-          text: body,
-          html: reminderHtml(body),
+          text: mail.text,
+          html: mail.html,
         });
         const finalized = await finishReminderDelivery(current.deliveryId, current.claimToken, { status: "sent" });
         if (finalized) summary.sent += 1;

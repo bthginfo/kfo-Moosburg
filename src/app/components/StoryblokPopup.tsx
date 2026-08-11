@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useId, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, Calendar, Sparkles } from "lucide-react";
-import { useStoryblokContent, assetUrl } from "../../storyblok/useStoryblokContent";
 import { DEFAULTS } from "../../storyblok/contentDefaults";
 import { openBooking } from "../../config/booking";
 import { safeHref } from "../lib/safeContent";
@@ -9,8 +8,7 @@ import { lockBodyScroll } from "../lib/bodyScrollLock";
 
 const SESSION_KEY = "kfo-popup-dismissed";
 
-export function StoryblokPopup() {
-  const { story, isConnected } = useStoryblokContent("einstellungen");
+export function PracticePopup() {
   const [visible, setVisible] = useState(false);
   const [hasTriggered, setHasTriggered] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -18,19 +16,16 @@ export function StoryblokPopup() {
   const titleId = useId();
   const descriptionId = useId();
 
-  // Get popup config from Storyblok (flat) or defaults
-  const c = isConnected && story ? story.content : null;
-
   const config = {
-    enabled: c?.popup_enabled ?? DEFAULTS.popup_enabled,
-    title: c?.popup_title || DEFAULTS.popup_title,
-    text: String(c?.popup_text || DEFAULTS.popup_text),
-    cta_text: c?.popup_cta_text || DEFAULTS.popup_cta_text,
-    cta_link: c?.popup_cta_link || DEFAULTS.popup_cta_link,
-    cta_is_drflex: c?.popup_cta_is_drflex ?? DEFAULTS.popup_cta_is_drflex,
-    delay_seconds: c?.popup_delay ?? DEFAULTS.popup_delay,
-    show_once_per_session: c?.popup_once_per_session ?? DEFAULTS.popup_once_per_session,
-    image: c?.popup_image ? assetUrl(c.popup_image, "") : "",
+    enabled: DEFAULTS.popup_enabled,
+    title: DEFAULTS.popup_title,
+    text: String(DEFAULTS.popup_text),
+    cta_text: DEFAULTS.popup_cta_text,
+    cta_link: DEFAULTS.popup_cta_link,
+    cta_is_drflex: DEFAULTS.popup_cta_is_drflex,
+    delay_seconds: DEFAULTS.popup_delay,
+    show_once_per_session: DEFAULTS.popup_once_per_session,
+    image: "",
     background_color: "",
   };
 

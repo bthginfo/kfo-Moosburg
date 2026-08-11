@@ -1,8 +1,7 @@
 // =============================================================================
-// KFO Moosburg – Content Defaults / Fallback-Daten
+// KFO Moosburg – fest eingebundener Website-Snapshot
 // =============================================================================
-// Werden angezeigt wenn Storyblok nicht verbunden ist.
-// Spiegelt die flache Storyblok-Struktur wider.
+// Änderungen an öffentlichen Texten und Bildern erfolgen künftig direkt hier.
 // =============================================================================
 
 import { IMAGES } from "../app/components/images";
@@ -76,17 +75,14 @@ export const DEFAULTS = {
   // ─── TEAM ────────────────────────────────────────────────────────────
   team_title: "Unser Praxisteam",
   team_subtitle: "Bei uns sind Sie in guten und professionellen Händen",
-  // Personenbezogene Porträts werden ausschließlich über verifizierte
-  // Storyblok-Assets angezeigt. Die Defaults dürfen keine Stock-Fotos als
-  // Abbildungen der namentlich genannten Behandler ausgeben.
-  team_1_name: "Dr. Christoph Amann", team_1_role: "Fachzahnarzt für Kieferorthopädie", team_1_image: "",
-  team_2_name: "Dr. Julian Burg", team_2_role: "M.Sc. Kieferorthopädie", team_2_image: "",
+  team_1_name: "Dr. Christoph Amann", team_1_role: "Fachzahnarzt für Kieferorthopädie", team_1_image: IMAGES.doctorAmann,
+  team_2_name: "Dr. Julian Burg", team_2_role: "M.Sc. Kieferorthopädie", team_2_image: IMAGES.doctorBurg,
 
   // ─── ANAMNESE ────────────────────────────────────────────────────────
   anamnese_title: "Unser Anamnesebogen",
   anamnese_description: "Sie möchten bereits Ihren Anamnesebogen ausfüllen? Kein Problem, füllen Sie einfach das Formular aus und sparen Sie sich Zeit bei Ihrem ersten Besuch.",
   anamnese_cta_text: "Anamnesebogen ausfüllen",
-  anamnese_cta_link: "https://kfo-moosburg.eu1.documents.adobe.com/public/esignWidget?wid=CBFCIBAA3AAABLblqZhB79JplX13uBUwew3CVV6rzvwzxZZtZlVycjVbyp__XhlPNFgmJ9oH-rlFo1BpIPwE*",
+  anamnese_cta_link: "https://kfo-moosburg.eu1.documents.adobe.com/public/esignWidget?wid=CBFCIBAA3AAABLblqZhAp6w3YOK7Gd-Z4COCpHHHrn0QFXnQQV0EcpS-R3ixX40TG56zOJu3XUAnnzKZNym0*",
   anamnese_image: IMAGES.anamnesebogen,
 
   // ─── GALLERY ─────────────────────────────────────────────────────────
@@ -115,12 +111,12 @@ export const DEFAULTS = {
   contact_maps_url: "https://www.google.com/maps/embed?pb=!1m18!1m12!1d2645.456669718668!2d11.931745076738354!3d48.466953528173065!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x479e3d88016ac899%3A0xed130e306716fd3a!2sKieferorthop%C3%A4die%20Moosburg%20Dr.%20Amann%20%26%20Dr.%20Burg!5e0!3m2!1sde!2sde!4v1712132681998!5m2!1sde!2sde",
 
   // ─── NAVBAR ──────────────────────────────────────────────────────────
-  nav_logo_image: "",
+  nav_logo_image: IMAGES.logo,
   nav_phone: "08761 7222750",
   nav_cta_text: "Ersttermin vereinbaren",
 
   // ─── FOOTER ──────────────────────────────────────────────────────────
-  footer_logo_image: "",
+  footer_logo_image: IMAGES.footerLogo,
   footer_subtitle_1: "Dr. Amann & Dr. Burg",
   footer_subtitle_2: "Kieferorthopädie Moosburg",
   footer_phone: "08761 7222750",

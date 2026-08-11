@@ -2,6 +2,7 @@ import { createCipheriv, createDecipheriv, createHmac, createHash, randomBytes, 
 import type { VercelRequest, VercelResponse } from "./vercelTypes.js";
 import { neon } from "@neondatabase/serverless";
 import nodemailer from "nodemailer";
+import { practiceMail } from "./kfoMail.js";
 
 const SESSION_COOKIE = "kfo_admin_session";
 const SESSION_TTL_SECONDS = 12 * 60 * 60;
@@ -38,6 +39,7 @@ export interface Customer {
   status: CustomerStatus;
   notes: string;
   emailConsent: boolean;
+  invoiceEmailConsent: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -228,7 +230,7 @@ function databaseUrl(): string {
   return env("DATABASE_URL") || env("moosburg_DATABASE_URL");
 }
 
-function database() {
+export function database() {
   const connectionString = databaseUrl();
   if (!connectionString) throw new Error("DATABASE_URL oder moosburg_DATABASE_URL fehlt.");
   return neon(connectionString);
@@ -240,9 +242,9 @@ export function hasStoreConfiguration(): boolean {
 
 export function missingAdminConfiguration(): string[] {
   const missing: string[] = [];
-  if (!env("ADMIN_PASSWORD")) missing.push("ADMIN_PASSWORD");
-  if (!sessionSecret()) missing.push("ADMIN_SESSION_SECRET");
-  if (!env("ADMIN_ENCRYPTION_KEY")) missing.push("ADMIN_ENCRYPTION_KEY");
+  if (env("ADMIN_PASSWORD").length < 20) missing.push("ADMIN_PASSWORD (mindestens 20 Zeichen)");
+  if (sessionSecret().length < 32) missing.push("ADMIN_SESSION_SECRET (mindestens 32 Zeichen)");
+  if (env("ADMIN_ENCRYPTION_KEY").length < 32) missing.push("ADMIN_ENCRYPTION_KEY (mindestens 32 Zeichen)");
   if (!databaseUrl()) missing.push("DATABASE_URL oder moosburg_DATABASE_URL");
   return missing;
 }
@@ -272,6 +274,9 @@ async function ensureSchema(): Promise<void> {
         status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'paused', 'completed', 'archived')),
         notes TEXT NOT NULL DEFAULT '',
         email_consent BOOLEAN NOT NULL DEFAULT FALSE,
+        invoice_email_consent BOOLEAN NOT NULL DEFAULT FALSE,
+        invoice_email_consent_at TIMESTAMPTZ,
+        invoice_email_consent_source TEXT NOT NULL DEFAULT '',
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )`,
@@ -334,6 +339,9 @@ async function ensureSchema(): Promise<void> {
         reset_at TIMESTAMPTZ NOT NULL
       )`,
       sql`ALTER TABLE kfo_reminder_deliveries ADD COLUMN IF NOT EXISTS claim_token TEXT NOT NULL DEFAULT ''`,
+      sql`ALTER TABLE kfo_customers ADD COLUMN IF NOT EXISTS invoice_email_consent BOOLEAN NOT NULL DEFAULT FALSE`,
+      sql`ALTER TABLE kfo_customers ADD COLUMN IF NOT EXISTS invoice_email_consent_at TIMESTAMPTZ`,
+      sql`ALTER TABLE kfo_customers ADD COLUMN IF NOT EXISTS invoice_email_consent_source TEXT NOT NULL DEFAULT ''`,
       sql`DO $$ BEGIN
         IF EXISTS (
           SELECT 1 FROM pg_constraint
@@ -400,7 +408,8 @@ export async function loadStore(): Promise<StoreSnapshot> {
     sql`SELECT id, salutation, first_name AS "firstName", last_name AS "lastName",
       birth_date::text AS "birthDate", email, phone, mobile, street, postal_code AS "postalCode", city,
       insurance_type AS "insuranceType", insurer, patient_number AS "patientNumber", status, notes,
-      email_consent AS "emailConsent", created_at AS "createdAt", updated_at AS "updatedAt"
+      email_consent AS "emailConsent", invoice_email_consent AS "invoiceEmailConsent",
+      created_at AS "createdAt", updated_at AS "updatedAt"
       FROM kfo_customers`,
     sql`SELECT id, customer_id AS "customerId", appointment_date::text AS date,
       appointment_time AS time, appointment_type AS type, notes, status,
@@ -531,7 +540,8 @@ export async function revalidateClaimedReminderDelivery(
         c.street AS "customerStreet", c.postal_code AS "customerPostalCode", c.city AS "customerCity",
         c.insurance_type AS "customerInsuranceType", c.insurer AS "customerInsurer",
         c.patient_number AS "customerPatientNumber", c.status AS "customerStatus", c.notes AS "customerNotes",
-        c.email_consent AS "customerEmailConsent", c.created_at AS "customerCreatedAt", c.updated_at AS "customerUpdatedAt"
+        c.email_consent AS "customerEmailConsent", c.invoice_email_consent AS "customerInvoiceEmailConsent",
+        c.created_at AS "customerCreatedAt", c.updated_at AS "customerUpdatedAt"
       FROM kfo_reminder_deliveries d
       JOIN kfo_reminder_rules r ON r.id = d.reminder_id
       JOIN kfo_appointments a ON a.id = d.appointment_id
@@ -600,6 +610,7 @@ export async function revalidateClaimedReminderDelivery(
       status: row.customerStatus,
       notes: String(row.customerNotes || ""),
       emailConsent: row.customerEmailConsent === true,
+      invoiceEmailConsent: row.customerInvoiceEmailConsent === true,
       createdAt: timestamp(row.customerCreatedAt),
       updatedAt: timestamp(row.customerUpdatedAt),
     },
@@ -639,17 +650,24 @@ export async function appendEvents(events: StoreEvent[]): Promise<void> {
       const item = event.data as Customer;
       queries.push(sql`INSERT INTO kfo_customers (
         id, salutation, first_name, last_name, birth_date, email, phone, mobile, street, postal_code, city,
-        insurance_type, insurer, patient_number, status, notes, email_consent, created_at, updated_at
+        insurance_type, insurer, patient_number, status, notes, email_consent, invoice_email_consent,
+        invoice_email_consent_at, invoice_email_consent_source, created_at, updated_at
       ) VALUES (${item.id}, ${item.salutation}, ${item.firstName}, ${item.lastName}, ${item.birthDate || null},
         ${item.email}, ${item.phone}, ${item.mobile}, ${item.street}, ${item.postalCode}, ${item.city},
         ${item.insuranceType}, ${item.insurer}, ${item.patientNumber}, ${item.status}, ${item.notes},
-        ${item.emailConsent}, ${item.createdAt}, ${item.updatedAt})
+        ${item.emailConsent}, ${item.invoiceEmailConsent}, ${item.invoiceEmailConsent ? item.updatedAt : null},
+        ${item.invoiceEmailConsent ? "admin" : ""}, ${item.createdAt}, ${item.updatedAt})
       ON CONFLICT (id) DO UPDATE SET salutation = EXCLUDED.salutation, first_name = EXCLUDED.first_name,
         last_name = EXCLUDED.last_name, birth_date = EXCLUDED.birth_date, email = EXCLUDED.email,
         phone = EXCLUDED.phone, mobile = EXCLUDED.mobile, street = EXCLUDED.street,
         postal_code = EXCLUDED.postal_code, city = EXCLUDED.city, insurance_type = EXCLUDED.insurance_type,
         insurer = EXCLUDED.insurer, patient_number = EXCLUDED.patient_number, status = EXCLUDED.status,
-        notes = EXCLUDED.notes, email_consent = EXCLUDED.email_consent, updated_at = EXCLUDED.updated_at`);
+        notes = EXCLUDED.notes, email_consent = EXCLUDED.email_consent,
+        invoice_email_consent_at = CASE
+          WHEN kfo_customers.invoice_email_consent = FALSE AND EXCLUDED.invoice_email_consent = TRUE THEN EXCLUDED.updated_at
+          WHEN EXCLUDED.invoice_email_consent = FALSE THEN NULL ELSE kfo_customers.invoice_email_consent_at END,
+        invoice_email_consent_source = CASE WHEN EXCLUDED.invoice_email_consent = TRUE THEN 'admin' ELSE '' END,
+        invoice_email_consent = EXCLUDED.invoice_email_consent, updated_at = EXCLUDED.updated_at`);
     }
     if (event.collection === "appointments") {
       const item = event.data as Appointment;
@@ -737,11 +755,13 @@ export async function saveCustomerRecord(
   if (options.create) {
     const rows = await sql`INSERT INTO kfo_customers (
         id, salutation, first_name, last_name, birth_date, email, phone, mobile, street, postal_code, city,
-        insurance_type, insurer, patient_number, status, notes, email_consent, created_at, updated_at
+        insurance_type, insurer, patient_number, status, notes, email_consent, invoice_email_consent,
+        invoice_email_consent_at, invoice_email_consent_source, created_at, updated_at
       ) VALUES (${item.id}, ${item.salutation}, ${item.firstName}, ${item.lastName}, ${item.birthDate || null},
         ${item.email}, ${item.phone}, ${item.mobile}, ${item.street}, ${item.postalCode}, ${item.city},
         ${item.insuranceType}, ${item.insurer}, ${item.patientNumber}, ${item.status}, ${item.notes},
-        ${item.emailConsent}, ${item.createdAt}, date_trunc('milliseconds', clock_timestamp()))
+        ${item.emailConsent}, ${item.invoiceEmailConsent}, CASE WHEN ${item.invoiceEmailConsent} THEN NOW() ELSE NULL END,
+        CASE WHEN ${item.invoiceEmailConsent} THEN 'admin' ELSE '' END, ${item.createdAt}, date_trunc('milliseconds', clock_timestamp()))
       RETURNING updated_at AS "updatedAt"`;
     return { ...item, updatedAt: timestamp((rows as any[])[0]?.updatedAt) };
   }
@@ -760,6 +780,11 @@ export async function saveCustomerRecord(
       city = ${item.city}, insurance_type = ${item.insuranceType}, insurer = ${item.insurer},
       patient_number = ${item.patientNumber}, status = ${item.status}, notes = ${item.notes},
       email_consent = ${item.emailConsent},
+      invoice_email_consent_at = CASE
+        WHEN invoice_email_consent = FALSE AND ${item.invoiceEmailConsent} = TRUE THEN NOW()
+        WHEN ${item.invoiceEmailConsent} = FALSE THEN NULL ELSE invoice_email_consent_at END,
+      invoice_email_consent_source = CASE WHEN ${item.invoiceEmailConsent} THEN 'admin' ELSE '' END,
+      invoice_email_consent = ${item.invoiceEmailConsent},
       updated_at = GREATEST(date_trunc('milliseconds', clock_timestamp()), updated_at + INTERVAL '1 millisecond')
       WHERE id = ${item.id} RETURNING updated_at AS "updatedAt"`,
   ];
@@ -900,7 +925,7 @@ export function deleteEvent(collection: Collection, id: string): StoreEvent {
   return { collection, id, operation: "delete", data: null, updatedAt: new Date().toISOString() };
 }
 
-function cleanText(value: unknown, max = 500): string {
+export function cleanText(value: unknown, max = 500): string {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 
@@ -952,6 +977,7 @@ export function normalizeCustomer(input: any, existing?: Customer): Customer {
     status,
     notes: cleanText(input?.notes, 4000),
     emailConsent: input?.emailConsent === true || input?.reminderConsent === true,
+    invoiceEmailConsent: input?.invoiceEmailConsent === true,
     createdAt: existing?.createdAt || now,
     updatedAt: now,
   };
@@ -1086,6 +1112,7 @@ export function customerWithAppointments(customer: Customer, appointments: Appoi
   return {
     ...customer,
     reminderConsent: customer.emailConsent,
+    invoiceEmailConsent: customer.invoiceEmailConsent,
     appointments: appointments
       .filter((item) => item.customerId === customer.id)
       .sort((a, b) => `${a.date}T${a.time || "00:00"}`.localeCompare(`${b.date}T${b.time || "00:00"}`))
@@ -1184,10 +1211,6 @@ export function renderTemplate(template: string, customer: Customer, appointment
   return template.replace(/{{\s*(vorname|nachname|termin_datum|termin_uhrzeit|termin_art|praxis_name)\s*}}/g, (_, key) => values[key as keyof typeof values]);
 }
 
-function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character] || character);
-}
-
 export function reminderHtml(body: string): string {
-  return `<!doctype html><html lang="de"><body style="margin:0;background:#edf7ff;padding:24px"><div style="max-width:620px;margin:0 auto;background:#fff;border-radius:18px;overflow:hidden;font-family:Arial,sans-serif;color:#0d1317"><div style="background:#063255;padding:22px 28px;color:#fff;font-size:18px;font-weight:700">KFO <span style="color:#f58a07">Moosburg</span></div><div style="padding:30px 28px;line-height:1.7;font-size:16px">${escapeHtml(body).replace(/\n/g, "<br>")}</div><div style="padding:18px 28px;border-top:1px solid #dceaf5;color:#4a5d69;font-size:12px">Kieferorthopädie Moosburg · Dr. Amann &amp; Dr. Burg · Münchener Straße 4a · 85368 Moosburg</div></div></body></html>`;
+  return practiceMail({ subject: "Erinnerung", body, eyebrow: "Terminerinnerung" }).html;
 }

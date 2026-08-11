@@ -4,10 +4,7 @@ import { Footer } from "./Footer";
 import { StickyMobileCTA } from "./StickyMobileCTA";
 import { WhatsAppButton } from "./WhatsAppButton";
 import { BackToTop } from "./BackToTop";
-import { StoryblokPopup } from "./StoryblokPopup";
-
-// Storyblok-Konfiguration für die veröffentlichte CDN-API laden.
-import "../../storyblok/storyblokConfig";
+import { PracticePopup } from "./StoryblokPopup";
 
 export function KFOLayout() {
   const isHomePage = useLocation().pathname === "/";
@@ -20,7 +17,7 @@ export function KFOLayout() {
       {isHomePage && <StickyMobileCTA />}
       {isHomePage && <WhatsAppButton />}
       <BackToTop />
-      {isHomePage && <StoryblokPopup />}
+      {isHomePage && <PracticePopup />}
     </div>
   );
 }

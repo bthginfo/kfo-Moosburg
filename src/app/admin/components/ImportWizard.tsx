@@ -646,6 +646,7 @@ function mapRow(
     patientNumber: value("patientNumber"),
     status,
     reminderConsent: /^(ja|yes|1|x)$/i.test(value("reminderConsent")),
+    invoiceEmailConsent: false,
     salutation: "",
     mobile: "",
     insurer: "",

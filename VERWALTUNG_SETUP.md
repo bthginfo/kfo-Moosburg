@@ -25,7 +25,6 @@ Production und Preview dürfen weder Datenbank, SMTP-Zugang noch Admin-Secrets t
 | Admin-Passwort | Eigenes starkes Production-Passwort | Je Umgebung ein anderes Test-Passwort |
 | Session-, Verschlüsselungs- und Cron-Secrets | Eigene Production-Werte | Eigene, nicht wiederverwendete Testwerte; `CRON_SECRET` ist für Preview normalerweise nicht nötig |
 | SMTP | Produktives Praxiskonto nur in der Production-Datenbank konfigurieren | Separates Testkonto oder Mail-Sink; niemals das Praxiskonto |
-| Storyblok | Public/Published Content Delivery Token | Ebenfalls nur Public/Published Content Delivery Token |
 
 In Vercel muss bei jeder Variable der passende Environment-Scope kontrolliert werden. Insbesondere dürfen die Production-Werte von `DATABASE_URL`, `moosburg_DATABASE_URL`, `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`, `ADMIN_ENCRYPTION_KEY` und `CRON_SECRET` nicht zusätzlich für Preview oder Development freigeschaltet sein.
 
@@ -43,13 +42,10 @@ SMTP-Zugangsdaten werden nicht als Vercel-Variable hinterlegt, sondern im gesch�
 
 Die vier Secrets müssen unabhängig voneinander sein. Werte mit einem Passwortmanager oder einem kryptografisch sicheren Secret-Generator erzeugen, niemals aus Namen, Praxisdaten oder wiederkehrenden Mustern ableiten. Secrets nicht in Quellcode, Dokumentation, Screenshots, Tickets, Chatnachrichten oder Git-Commits einfügen. Bei vermuteter Offenlegung den betroffenen Wert sofort in Vercel rotieren; beim `ADMIN_ENCRYPTION_KEY` anschließend das SMTP-Passwort neu speichern.
 
-### Öffentliche und optionale Variablen
+### Optionale Variablen
 
-- `VITE_STORYBLOK_TOKEN`: ausschließlich ein **Public/Published Content Delivery Token** für veröffentlichte Website-Inhalte. Jede Variable mit Präfix `VITE_` wird in das öffentliche Browser-Bundle eingebaut und ist kein Secret.
 - `MAX_REMINDERS_PER_RUN` (optional): maximales Versandvolumen pro Lauf, Standard `25`, maximal `100`. Diese Zahl ist kein Secret.
 - `REMINDER_GRACE_DAYS` (optional): Zeitraum, in dem fehlgeschlagene oder wegen eines Ausfalls verpasste Erinnerungen erneut geprüft werden, Standard `7`, maximal `30` Tage.
-
-Ein Storyblok **Preview Token**, Management Token oder Personal Access Token darf niemals als `VITE_STORYBLOK_TOKEN`, in einer anderen `VITE_`-Variable oder im Repository gespeichert werden. Management-Zugriffe für einmalige lokale Importskripte nur über eine lokale, nicht eingecheckte Umgebungsvariable beziehungsweise geschützte Script Properties ausführen und den Token danach widerrufen. In Production werden ausschließlich veröffentlichte Storyblok-Inhalte geladen.
 
 ## Preview-Deployments schützen
 
@@ -76,6 +72,18 @@ Die öffentliche Buchung ist bewusst doppelt abgesichert: Es wird weder ein öff
 ## Vorbereitete ivoris®-Anbindung
 
 Termine besitzen Felder für Quellsystem, externe ID, Synchronisationsstatus und letzten Abgleich. Damit ist die Datenstruktur für `ivoris® termin` vorbereitet. Die echte Echtzeit-Synchronisation benötigt eine offiziell freigeschaltete `ivoris® webservice`-/`ivoris® connect pro`-Anbindung und die technische Dokumentation bzw. Zugangsdaten von Computer konkret/ivoris. Bis diese vorliegen, zeigt der Admin den Status `Zugang erforderlich` und führt keinen vorgetäuschten Abgleich aus. Dafür sind aktuell keine zusätzlichen Vercel-Umgebungsvariablen nötig.
+
+## Rechnungsversand
+
+Unter `/verwaltung/rechnungen` können passwortgeschützte PDF-Rechnungen oder ZIP-Dateien eingelesen und anhand der Patientennummer eindeutig zugeordnet werden. ZIP-Dateien werden ausschließlich im Browser entpackt. Der Server verarbeitet pro Versand genau eine PDF kurzzeitig im Arbeitsspeicher und übergibt sie direkt an den SMTP-Server; Rechnungsdateien werden weder in PostgreSQL noch in Blob-Speichern oder im Dateisystem persistiert. Gespeichert werden nur minimal erforderliche Status- und Versandnachweise.
+
+Ein Versand ist nur mit gültiger E-Mail-Adresse, dokumentierter Rechnungs-E-Mail-Einwilligung und verschlüsselter PDF möglich. Das PDF-Kennwort darf nicht zusammen mit der Rechnung versendet werden. Der Browser-Tab muss während eines Stapelversands geöffnet bleiben; ein fortsetzbarer Hintergrundversand ist ohne temporäre Dokumentenspeicherung technisch nicht möglich. SMTP-Transportverschlüsselung ist keine Ende-zu-Ende-Verschlüsselung. Vor produktivem Einsatz sind Rechtsgrundlage, Einwilligungstext, AV-Verträge, technische und organisatorische Maßnahmen sowie das Kennwortverfahren fachlich und datenschutzrechtlich freizugeben.
+
+Der Rechnungsstatus wird je Rechnung historisch geführt. `Bezahlt` darf nicht manuell gesetzt werden und wird erst mit der offiziellen iVoris-Anbindung aus dem Quellsystem übernommen. Ohne freigegebene iVoris-API findet kein vorgetäuschter Stammdaten- oder Zahlungsabgleich statt.
+
+## Öffentliche Website-Inhalte
+
+Texte und Praxisbilder der öffentlichen Website sind als lokaler Snapshot im Repository hinterlegt. Storyblok wird zur Laufzeit nicht mehr verwendet; Änderungen erfolgen künftig direkt am Quellcode und den lokalen Assets.
 
 ## Interne Kostenvoranschläge
 

@@ -114,7 +114,7 @@ export function GallerySection() {
   );
 
   // Ohne freigegebene Praxisfotos zeigen wir keine Galerie aus identischen
-  // Platzhaltergrafiken. Sobald Storyblok echte Bilder liefert, erscheint sie.
+  // Nicht vorhandene lokale Snapshot-Bilder werden nicht als Galerieeintrag gezeigt.
   if (galleryImages.length === 0) return null;
 
   return (

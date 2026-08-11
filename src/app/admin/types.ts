@@ -252,10 +252,43 @@ export type Customer = {
   status: CustomerStatus;
   notes?: string;
   reminderConsent: boolean;
+  invoiceEmailConsent: boolean;
   appointments: Appointment[];
   createdAt: string;
   updatedAt: string;
 };
+
+export type InvoiceStatus = "not_sent" | "sent" | "reminder_sent" | "paid";
+export type InvoiceDeliveryStatus = "processing" | "sent" | "failed" | "uncertain";
+
+export type InvoiceRecord = {
+  id: string;
+  customerId: string;
+  invoiceNumber: string;
+  externalId: string;
+  documentHash: string;
+  issuedAt: string;
+  source: "upload" | "ivoris";
+  status: InvoiceStatus;
+  sentAt: string;
+  reminderSentAt: string;
+  paidAt: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type InvoiceDelivery = {
+  id: string;
+  invoiceId: string;
+  customerId: string;
+  kind: "invoice" | "reminder";
+  status: InvoiceDeliveryStatus;
+  sentAt: string;
+  error: string;
+  updatedAt: string;
+};
+
+export type InvoiceBundle = { invoices: InvoiceRecord[]; deliveries: InvoiceDelivery[] };
 
 export type ReminderAudience = "all" | "selected";
 

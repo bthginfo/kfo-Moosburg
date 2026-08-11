@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { neon } from "@neondatabase/serverless";
 import { buildTransport, isValidEmail, loadStore } from "./kfoAdmin.js";
+import { practiceMail } from "./kfoMail.js";
 import {
   BEMA_SOURCE_URL,
   BEMA_SOURCE_VERSION,
@@ -1025,13 +1026,18 @@ export async function sendEstimate(idValue: unknown) {
   const transport = buildTransport(settings);
   try {
     await transport.verify();
+    const mail = practiceMail({
+      subject: "Persönliche Unterlagen – KFO Moosburg",
+      body: "persönliche Unterlagen liegen für Sie in unserer Praxis bereit.\n\nAus Datenschutzgründen enthält diese E-Mail keine medizinischen, versicherungsbezogenen oder finanziellen Angaben. Bitte wenden Sie sich für die sichere Übergabe direkt an unser Praxisteam.",
+      eyebrow: "Persönliche Unterlagen",
+    });
     await transport.sendMail({
       from: { name: settings.fromName, address: settings.fromEmail },
       to: recipient,
       replyTo: settings.replyTo || settings.fromEmail,
       subject: "Persönliche Unterlagen – KFO Moosburg",
-      text: "Guten Tag,\n\npersönliche Unterlagen liegen für Sie in unserer Praxis bereit.\n\nAus Datenschutzgründen enthält diese E-Mail keine medizinischen, versicherungsbezogenen oder finanziellen Angaben. Bitte wenden Sie sich für die sichere Übergabe direkt an unser Praxisteam.\n\nViele Grüße\nIhre KFO Moosburg",
-      html: estimateEmailHtml(),
+      text: mail.text,
+      html: mail.html,
     });
   } catch (error) {
     const message = error instanceof Error ? cleanText(error.message, 500) : "Unbekannter Versandfehler";

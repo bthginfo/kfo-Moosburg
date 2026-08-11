@@ -1,6 +1,7 @@
 node_modules/
 dist/
 dogfood-output/
+.task-tmp/
 .vercel/
 .env
 .env.*

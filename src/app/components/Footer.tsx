@@ -1,19 +1,16 @@
 import { Link } from "react-router";
-import { useStoryblokContent, assetUrl } from "../../storyblok/useStoryblokContent";
 import { DEFAULTS } from "../../storyblok/contentDefaults";
 import { safeEmailAddress, safeHref, safeTelephoneHref } from "../lib/safeContent";
 
 export function Footer() {
-  const { story, isConnected } = useStoryblokContent("einstellungen");
-  const c = isConnected && story ? story.content : null;
-  const logoSrc = c ? assetUrl(c.footer_logo_image, "") : "";
-  const subtitle1 = String(c?.footer_subtitle_1 || DEFAULTS.footer_subtitle_1);
-  const subtitle2 = String(c?.footer_subtitle_2 || DEFAULTS.footer_subtitle_2);
-  const phone = String(c?.footer_phone || DEFAULTS.footer_phone);
+  const logoSrc = String(DEFAULTS.footer_logo_image || "");
+  const subtitle1 = String(DEFAULTS.footer_subtitle_1);
+  const subtitle2 = String(DEFAULTS.footer_subtitle_2);
+  const phone = String(DEFAULTS.footer_phone);
   const phoneHref = safeTelephoneHref(phone) || safeTelephoneHref(DEFAULTS.footer_phone);
-  const email = safeEmailAddress(c?.footer_email) || DEFAULTS.footer_email;
-  const instagramHref = safeHref(c?.footer_instagram || DEFAULTS.footer_instagram, "");
-  const copyright = String(c?.footer_copyright || DEFAULTS.footer_copyright);
+  const email = safeEmailAddress(DEFAULTS.footer_email) || DEFAULTS.footer_email;
+  const instagramHref = safeHref(DEFAULTS.footer_instagram, "");
+  const copyright = String(DEFAULTS.footer_copyright);
 
   return (
     <footer

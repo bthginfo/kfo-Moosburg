@@ -6,6 +6,7 @@ import type {
   EstimateCatalogItem,
   EstimateDraft,
   EstimateStatus,
+  InvoiceBundle,
   ReminderDraft,
   ReminderRule,
   ScheduleBundle,
@@ -182,4 +183,11 @@ export const adminApi = {
       body: JSON.stringify({ action: "importPointValues", rows }),
     }),
   estimatePrintUrl: (id: string) => `/api/admin-estimates?action=print&id=${encodeURIComponent(id)}`,
+  invoices: () => request<InvoiceBundle>("/api/admin-invoices"),
+  sendInvoice: (data: {
+    customerId: string; patientNumber: string; invoiceNumber?: string; issuedAt?: string;
+    documentHash?: string; pdfBase64?: string; fileName?: string; kind: "invoice" | "reminder"; invoiceId?: string;
+  }) => request<{ invoice: import("./types").InvoiceRecord; delivery: import("./types").InvoiceDelivery }>("/api/admin-invoices", {
+    method: "POST", body: JSON.stringify(data),
+  }),
 };

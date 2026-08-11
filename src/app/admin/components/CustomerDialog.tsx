@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
-import { CalendarDays, Check, ExternalLink, UserRound } from "lucide-react";
+import { CalendarDays, Check, ExternalLink, MailCheck, UserRound } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +34,7 @@ const emptyDraft: CustomerDraft = {
   status: "active",
   notes: "",
   reminderConsent: false,
+  invoiceEmailConsent: false,
   appointments: [],
 };
 
@@ -89,10 +90,10 @@ export function CustomerDialog({ open, customer, saving, onOpenChange, onSave }:
                 <Field label="Status" className="lg:col-span-3"><select className="admin-field w-full" value={draft.status} onChange={(e) => set("status", e.target.value as CustomerDraft["status"])}><option value="active">Aktiv</option><option value="paused">Pausiert</option><option value="completed">Behandlung beendet</option><option value="archived">Archiviert</option></select></Field>
                 <Field label="Interne Notiz" className="lg:col-span-12"><textarea className="admin-field min-h-[76px] w-full" value={draft.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Nur für das Praxisteam sichtbar" /></Field>
               </div>
-              <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-[12px] border border-[#d5e4ed] bg-[#f7fbfd] px-4 py-3.5">
-                <input type="checkbox" checked={draft.reminderConsent} onChange={(e) => set("reminderConsent", e.target.checked)} className="mt-0.5 h-4 w-4 accent-[#063255]" />
-                <span><span className="block text-[13px] font-semibold text-[#244158]">Einwilligung für E-Mail-Erinnerungen liegt vor</span><span className="mt-0.5 block text-[11px] leading-5 text-[#6d8290]">Nur mit Einwilligung werden automatische Erinnerungen versendet.</span></span>
-              </label>
+              <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                <ConsentCard checked={draft.reminderConsent} onChange={(checked) => set("reminderConsent", checked)} title="Einwilligung für Termin-E-Mails liegt vor" description="Erlaubt automatische Erinnerungen vor und nach einem Termin." />
+                <ConsentCard checked={draft.invoiceEmailConsent} onChange={(checked) => set("invoiceEmailConsent", checked)} title="Einwilligung für Rechnungen per E-Mail liegt vor" description="Separat dokumentieren. Nur dann dürfen geschützte Rechnungen per E-Mail versendet werden." invoice />
+              </div>
             </Section>
 
             <Section title="Termine" description="Termine werden zentral im kollisionsgeprüften Terminplan verwaltet" noBorder>
@@ -123,3 +124,10 @@ function Section({ title, description, children, noBorder }: { title: string; de
 }
 
 function Field({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) { return <label className={className}><span className="admin-label">{label}</span>{children}</label>; }
+
+function ConsentCard({ checked, onChange, title, description, invoice = false }: { checked: boolean; onChange: (checked: boolean) => void; title: string; description: string; invoice?: boolean }) {
+  return <label className={`flex min-h-[92px] cursor-pointer items-start gap-3 rounded-[12px] border px-4 py-3.5 transition ${checked ? "border-[#8fb8cf] bg-[#edf7fc]" : "border-[#d5e4ed] bg-[#f7fbfd]"}`}>
+    <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-[#063255]" />
+    <span className="flex min-w-0 gap-2.5">{invoice && <MailCheck className="mt-0.5 h-[18px] w-[18px] shrink-0 text-[#3f7898]" aria-hidden="true" />}<span><span className="block text-[13px] font-semibold leading-5 text-[#244158]">{title}</span><span className="mt-0.5 block text-[11px] leading-5 text-[#607989]">{description}</span></span></span>
+  </label>;
+}

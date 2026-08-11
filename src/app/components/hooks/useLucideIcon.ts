@@ -22,7 +22,7 @@ const ICONS: Readonly<Record<string, LucideIcon>> = {
 };
 
 /**
- * Löst ausschließlich die in Storyblok vorgesehenen Praxis-Icons auf.
+ * Löst ausschließlich die im lokalen Website-Snapshot vorgesehenen Praxis-Icons auf.
  * Groß-/Kleinschreibung und Trennzeichen sind dabei unerheblich.
  */
 export function getLucideIcon(name: string, fallback: LucideIcon = Heart): LucideIcon {

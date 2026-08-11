@@ -10,6 +10,7 @@ import { RemindersPage } from "./pages/RemindersPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { SchedulePage } from "./pages/SchedulePage";
 import { EstimatesPage } from "./pages/EstimatesPage";
+import { InvoicesPage } from "./pages/InvoicesPage";
 import type { Customer, CustomerDraft, ReminderDelivery, ReminderDraft, ReminderRule, SmtpSettings } from "./types";
 import "./admin.css";
 
@@ -115,6 +116,7 @@ export function AdminApp() {
   else if (location.pathname.startsWith("/verwaltung/kunden")) page = <CustomersPage customers={customers} onLoggedOut={logout} onSave={saveCustomer} onRefresh={loadData} />;
   else if (location.pathname.startsWith("/verwaltung/termine")) page = <SchedulePage customers={customers} onLoggedOut={logout} />;
   else if (location.pathname.startsWith("/verwaltung/kostenvoranschlaege")) page = <EstimatesPage customers={customers} onLoggedOut={logout} />;
+  else if (location.pathname.startsWith("/verwaltung/rechnungen")) page = <InvoicesPage customers={customers} onLoggedOut={logout} />;
   else if (location.pathname.startsWith("/verwaltung/erinnerungen")) page = <RemindersPage reminders={reminders} customers={customers} onLoggedOut={logout} onSave={saveReminder} />;
   else if (location.pathname.startsWith("/verwaltung/einstellungen")) page = <SettingsPage settings={settings} onLoggedOut={logout} onSave={saveSettings} onTest={adminApi.testConnection} />;
   else page = <Navigate to="/verwaltung" replace />;

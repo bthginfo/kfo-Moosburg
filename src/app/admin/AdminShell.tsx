@@ -9,6 +9,8 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  MoreHorizontal,
+  ReceiptText,
   Settings,
   UsersRound,
   X,
@@ -22,6 +24,7 @@ const navigation = [
   { to: "/verwaltung", label: "Übersicht", mobileLabel: "Übersicht", icon: LayoutDashboard, exact: true },
   { to: "/verwaltung/termine", label: "Termine", mobileLabel: "Termine", icon: CalendarDays },
   { to: "/verwaltung/kunden", label: "Kund:innen", mobileLabel: "Kund:innen", icon: UsersRound },
+  { to: "/verwaltung/rechnungen", label: "Rechnungen", mobileLabel: "Rechnungen", icon: ReceiptText },
   { to: "/verwaltung/kostenvoranschlaege", label: "Kostenvoranschläge", mobileLabel: "KV", icon: FileText },
   { to: "/verwaltung/erinnerungen", label: "Erinnerungen", mobileLabel: "Erinner.", icon: BellRing },
   { to: "/verwaltung/einstellungen", label: "Einstellungen", mobileLabel: "Einstell.", icon: Settings },
@@ -146,11 +149,12 @@ export function AdminShell({ children, title, eyebrow, description, action, onLo
       )}
 
       <nav className="fixed inset-x-3 bottom-3 z-30 grid h-[70px] grid-cols-5 rounded-[17px] border border-[#c9d9e4] bg-white px-1.5 shadow-[0_12px_35px_rgba(6,50,85,.18)] lg:hidden" aria-label="Schnellnavigation">
-        {navigation.filter((item) => item.to !== "/verwaltung/einstellungen").map((item) => {
+        {navigation.filter((item) => ["/verwaltung", "/verwaltung/termine", "/verwaltung/kunden", "/verwaltung/rechnungen"].includes(item.to)).map((item) => {
           const active = item.exact ? location.pathname === item.to : location.pathname.startsWith(item.to);
           const Icon = item.icon;
-          return <Link key={item.to} to={item.to} className={`flex min-w-0 flex-col items-center justify-center gap-1 rounded-[13px] text-[11px] font-medium ${active ? "text-[#063255]" : "text-[#6e8290]"}`}><Icon className={`h-5 w-5 ${active ? "text-[#f58a07]" : ""}`} /><span className="max-w-full truncate">{item.mobileLabel}</span></Link>;
+          return <Link key={item.to} to={item.to} className={`flex min-h-11 min-w-0 flex-col items-center justify-center gap-1 rounded-[13px] text-[11px] font-medium ${active ? "text-[#063255]" : "text-[#6e8290]"}`}><Icon className={`h-5 w-5 ${active ? "text-[#f58a07]" : ""}`} /><span className="max-w-full truncate">{item.mobileLabel}</span></Link>;
         })}
+        <button type="button" onClick={() => setMenuOpen(true)} className={`flex min-h-11 min-w-0 flex-col items-center justify-center gap-1 rounded-[13px] text-[11px] font-medium ${navigation.slice(4).some((item) => location.pathname.startsWith(item.to)) ? "text-[#063255]" : "text-[#6e8290]"}`} aria-label="Alle Bereiche öffnen"><MoreHorizontal className={`h-5 w-5 ${navigation.slice(4).some((item) => location.pathname.startsWith(item.to)) ? "text-[#f58a07]" : ""}`} /><span>Mehr</span></button>
       </nav>
     </div>
   );

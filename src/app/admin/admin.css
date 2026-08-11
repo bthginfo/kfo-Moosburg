@@ -88,6 +88,8 @@ textarea.admin-field { padding-top: 11px; padding-bottom: 11px; resize: vertical
 .admin-estimate-dialog { max-width: 1320px !important; }
 .admin-estimate-detail-dialog { max-width: 1060px !important; }
 .admin-catalog-dialog { max-width: 720px !important; }
+.admin-invoice-dialog { max-width: 1260px !important; }
+.admin-invoice-reminder-dialog { max-width: 680px !important; }
 .admin-dialog-scroll {
   scrollbar-gutter: stable;
   scrollbar-color: #93b1c4 #edf4f8;
@@ -116,6 +118,16 @@ textarea.admin-field { padding-top: 11px; padding-bottom: 11px; resize: vertical
   height: 42px !important;
   min-width: 42px;
   min-height: 42px;
+}
+:is(.invoice-page, .invoice-ui, .admin-invoice-dialog, .admin-invoice-reminder-dialog) .admin-icon-button {
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px;
+  min-height: 44px;
+}
+:is(.invoice-page, .invoice-ui, .admin-invoice-dialog, .admin-invoice-reminder-dialog) :is(.text-\[9px\], .text-\[10px\], .text-\[11px\]) {
+  font-size: 12px !important;
+  line-height: 1.125rem !important;
 }
 
 @media (max-width: 639px) {

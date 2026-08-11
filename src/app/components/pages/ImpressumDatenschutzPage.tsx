@@ -179,22 +179,9 @@ export function ImpressumDatenschutzPage() {
                 </div>
 
                 <div>
-                  <h3 className="text-[#0d1317] text-lg mb-2" style={{ fontWeight: 600 }}>Veröffentlichte Website-Inhalte über Storyblok</h3>
-                  <p>
-                    Texte und freigegebene Medien der öffentlichen Website werden über das Content-Management-System und Content Delivery Network von Storyblok bereitgestellt. Beim Abruf solcher Inhalte kann Ihr Browser eine direkte Verbindung zu Storyblok-Domains herstellen und dabei technisch erforderliche Verbindungsdaten, insbesondere die IP-Adresse, übermitteln.
-                  </p>
-                  <p>
-                    Storyblok dient hier der Veröffentlichung allgemeiner Website-Inhalte. Patientenstammdaten und Vorgänge aus dem internen Verwaltungsbereich werden davon getrennt in der Praxisdatenbank gespeichert. Weitere Anbieterinformationen finden Sie auf{" "}
-                    <a href="https://www.storyblok.com" target="_blank" rel="noopener noreferrer" className="text-[#f58a07] hover:underline">
-                      storyblok.com
-                    </a>.
-                  </p>
-                </div>
-
-                <div>
                   <h3 className="text-[#0d1317] text-lg mb-2" style={{ fontWeight: 600 }}>Interner Verwaltungsbereich und Praxisdatenbank</h3>
                   <p>
-                    Unter <code>/verwaltung</code> betreibt die Praxis einen nicht öffentlichen Verwaltungsbereich. Der Zugriff ist für autorisierte Mitglieder des Praxisteams bestimmt. Dort können unter anderem Patienten- und Kundenstammdaten, Kontaktdaten, Termine, Statusangaben, Erinnerungen und Kostenvoranschläge verarbeitet werden.
+                    Unter <code>/verwaltung</code> betreibt die Praxis einen nicht öffentlichen Verwaltungsbereich. Der Zugriff ist für autorisierte Mitglieder des Praxisteams bestimmt. Dort können unter anderem Patienten- und Kundenstammdaten, Kontaktdaten, Termine, Statusangaben, Erinnerungen, Kostenvoranschläge und Metadaten zum Rechnungsversand verarbeitet werden.
                   </p>
                   <p>
                     Die Daten werden in einer PostgreSQL-Datenbank gespeichert, die technisch über Neon bereitgestellt wird. Je nach Eintrag können darunter Gesundheitsdaten und damit besonders geschützte personenbezogene Daten sein. Solche Daten dürfen nur im erforderlichen Umfang erfasst und innerhalb des berechtigten Praxisteams eingesehen werden. Umfang und Dauer der Speicherung richten sich nach dem jeweiligen Behandlungs- oder Verwaltungszweck sowie den für die Praxis geltenden Aufbewahrungspflichten.
@@ -204,7 +191,7 @@ export function ImpressumDatenschutzPage() {
                 <div>
                   <h3 className="text-[#0d1317] text-lg mb-2" style={{ fontWeight: 600 }}>E-Mail-Versand über den Praxis-SMTP-Dienst</h3>
                   <p>
-                    Für von der Praxis ausgelöste E-Mails, beispielsweise Terminerinnerungen, wird der im Verwaltungsbereich konfigurierte SMTP-Dienstleister verwendet. Zur Zustellung werden insbesondere Empfängeradresse, Absender, Betreff, Nachrichteninhalt und technische Versanddaten an diesen Dienst übermittelt.
+                    Für von der Praxis ausgelöste E-Mails, beispielsweise Terminerinnerungen oder ausdrücklich freigegebene Rechnungs-E-Mails, wird der im Verwaltungsbereich konfigurierte SMTP-Dienstleister verwendet. Zur Zustellung werden insbesondere Empfängeradresse, Absender, Betreff, Nachrichteninhalt, Anhänge und technische Versanddaten an diesen Dienst übermittelt. Rechnungsdateien werden von der Anwendung nicht dauerhaft in Datenbank, Blob-Speicher oder Dateisystem abgelegt, jedoch vom Hosting- und SMTP-Dienst technisch verarbeitet und im Empfängerpostfach gespeichert.
                   </p>
                   <p>
                     Der konkrete SMTP-Anbieter wird von der Praxis konfiguriert und kann wechseln. Auskunft über den aktuell eingesetzten Anbieter und die für einen konkreten Versand verarbeiteten Daten erhalten Sie über die oben genannten Praxiskontaktdaten.

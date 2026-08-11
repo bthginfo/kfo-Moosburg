@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Menu, X, Phone } from "lucide-react";
 import { Link, useLocation } from "react-router";
 import { useActiveSection } from "./hooks/useActiveSection";
-import { useStoryblokContent, assetUrl } from "../../storyblok/useStoryblokContent";
 import { DEFAULTS } from "../../storyblok/contentDefaults";
 import { openBooking } from "../../config/booking";
 import { safeTelephoneHref } from "../lib/safeContent";
@@ -25,14 +24,10 @@ export function Navbar() {
   const location = useLocation();
   const isHomePage = location.pathname === "/";
   const activeSection = useActiveSection(location.pathname);
-  const { story, isConnected } = useStoryblokContent("einstellungen");
-
-  // Resolve content: Storyblok or defaults
-  const c = isConnected && story ? story.content : null;
-  const logoSrc = c ? assetUrl(c.nav_logo_image, "") : "";
-  const navPhone = String(c?.nav_phone || DEFAULTS.nav_phone);
+  const logoSrc = String(DEFAULTS.nav_logo_image || "");
+  const navPhone = String(DEFAULTS.nav_phone);
   const navPhoneHref = safeTelephoneHref(navPhone) || safeTelephoneHref(DEFAULTS.nav_phone);
-  const navCtaText = String(c?.nav_cta_text || DEFAULTS.nav_cta_text);
+  const navCtaText = String(DEFAULTS.nav_cta_text);
   const handleNavClick = useCallback(() => setIsOpen(false), []);
 
   useEffect(() => {
