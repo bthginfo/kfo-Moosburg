@@ -5,7 +5,7 @@
   --admin-line: #d5e3ed;
   --admin-workspace: #edf7ff;
   --admin-orange: #f58a07;
-  font-family: "Poppins", sans-serif;
+  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 14px;
   line-height: 1.5;
 }

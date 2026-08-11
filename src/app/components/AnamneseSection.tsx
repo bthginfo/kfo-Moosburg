@@ -1,8 +1,9 @@
-import { IMAGES } from "./images";
 import { FileText } from "lucide-react";
 import { ScrollReveal } from "./ScrollReveal";
 import { motion } from "motion/react";
 import { useHomeContent } from "./hooks/useHomeContent";
+import { safeHref } from "../lib/safeContent";
+import { IMAGE_FALLBACK } from "./images";
 
 export function AnamneseSection() {
   const c = useHomeContent();
@@ -14,7 +15,7 @@ export function AnamneseSection() {
         <ScrollReveal direction="left" className="h-64 md:h-auto relative">
           <img
             src={c.anamnese_image}
-            alt="Anamnesebogen digital ausfüllen"
+            alt={c.anamnese_image === IMAGE_FALLBACK ? "" : "Anamnesebogen digital ausfüllen"}
             className="w-full h-full object-cover block"
             loading="lazy"
           />
@@ -47,7 +48,7 @@ export function AnamneseSection() {
             <motion.a
               whileHover={{ scale: 1.05, boxShadow: "0 8px 24px rgba(0,0,0,0.15)" }}
               whileTap={{ scale: 0.97 }}
-              href={c.anamnese_cta_link}
+              href={safeHref(c.anamnese_cta_link)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-block bg-white text-[#f58a07] hover:bg-[#063255] hover:text-white transition-colors duration-200 rounded-full px-8 py-3.5"

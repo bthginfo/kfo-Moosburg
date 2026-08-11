@@ -6,25 +6,66 @@ Der Verwaltungsbereich ist unter `/verwaltung` erreichbar. Patientendaten und SM
 
 1. Im Vercel-Projekt den Bereich **Storage / Marketplace** öffnen.
 2. **Neon Postgres** hinzufügen und eine Datenbank in einer passenden EU-Region anlegen.
-3. Die Datenbank mit dem Projekt und den benötigten Umgebungen (Production, Preview, Development) verbinden.
-4. Prüfen, dass Vercel `DATABASE_URL` oder die projektspezifisch präfixierte Variable `moosburg_DATABASE_URL` angelegt hat, und anschließend neu deployen.
+3. Die produktive Datenbank ausschließlich mit der Vercel-Umgebung **Production** verbinden.
+4. Für **Preview** eine eigene, leere Neon-Branch oder ein separates Neon-Projekt verwenden und dort ausschließlich synthetische Testdaten anlegen. Eine Branch, die von der befüllten Production-Datenbank geklont wurde, enthält zunächst dieselben Patientendaten und ist deshalb nicht als Testumgebung geeignet.
+5. Für lokale Entwicklung ebenfalls eine getrennte Testdatenbank verwenden. Niemals eine lokale oder Preview-Installation mit der Production-Datenbank verbinden.
+6. Prüfen, dass Vercel je Umgebung `DATABASE_URL` oder die projektspezifisch präfixierte Variable `moosburg_DATABASE_URL` angelegt hat, und anschließend neu deployen.
+
+Die Neon-Vercel-Integration legt häufig mehrere Variablen wie `POSTGRES_URL`, `PGHOST` oder `DATABASE_URL_UNPOOLED` an. Die Anwendung verwendet ausschließlich die gepoolte `DATABASE_URL` beziehungsweise `moosburg_DATABASE_URL`. Die übrigen Variablen müssen nicht manuell auf einen der beiden unterstützten Namen kopiert werden.
 
 Beim ersten geschützten API-Aufruf legt die Anwendung die benötigten Tabellen und Indizes automatisch an. Es sind keine manuellen SQL-Schritte erforderlich.
 
-## Vercel-Umgebungsvariablen
+## Strikte Trennung der Vercel-Umgebungen
 
-Folgende Variablen müssen für Production, Preview und bei Bedarf Development gesetzt werden:
+Production und Preview dürfen weder Datenbank, SMTP-Zugang noch Admin-Secrets teilen:
 
-- `ADMIN_PASSWORD`: Passwort für den Praxis-Login.
-- `ADMIN_SESSION_SECRET`: zufälliger, langer Wert zum Signieren der HttpOnly-Session.
-- `ADMIN_ENCRYPTION_KEY`: separater zufälliger, langer Wert zur AES-256-Verschlüsselung des SMTP-Passworts.
-- `CRON_SECRET`: zufälliger, langer Wert zum Schutz des täglichen Versandlaufs.
-- `DATABASE_URL` oder `moosburg_DATABASE_URL`: gepoolte PostgreSQL-Verbindungsadresse; wird bei der Neon-Vercel-Integration automatisch gesetzt. Beide Namen werden von der Anwendung erkannt.
-- `MAX_REMINDERS_PER_RUN` (optional): maximales Versandvolumen pro Lauf, Standard `100`.
+| Konfiguration | Production | Preview / Development |
+| --- | --- | --- |
+| PostgreSQL | Produktive Neon-Datenbank, nur Scope `Production` | Eigene leere Datenbank/Branch mit synthetischen Testdaten |
+| Admin-Passwort | Eigenes starkes Production-Passwort | Je Umgebung ein anderes Test-Passwort |
+| Session-, Verschlüsselungs- und Cron-Secrets | Eigene Production-Werte | Eigene, nicht wiederverwendete Testwerte; `CRON_SECRET` ist für Preview normalerweise nicht nötig |
+| SMTP | Produktives Praxiskonto nur in der Production-Datenbank konfigurieren | Separates Testkonto oder Mail-Sink; niemals das Praxiskonto |
+| Storyblok | Public/Published Content Delivery Token | Ebenfalls nur Public/Published Content Delivery Token |
+
+In Vercel muss bei jeder Variable der passende Environment-Scope kontrolliert werden. Insbesondere dürfen die Production-Werte von `DATABASE_URL`, `moosburg_DATABASE_URL`, `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`, `ADMIN_ENCRYPTION_KEY` und `CRON_SECRET` nicht zusätzlich für Preview oder Development freigeschaltet sein.
+
+SMTP-Zugangsdaten werden nicht als Vercel-Variable hinterlegt, sondern im geschützten Adminbereich verschlüsselt in der jeweiligen Datenbank gespeichert. Deshalb darf auch keine Kopie der Production-Datenbank an Preview angebunden werden: Sie würde neben Patientendaten die verschlüsselten SMTP-Einstellungen enthalten. In Preview nur ein separates Testpostfach oder einen Mail-Sink konfigurieren.
+
+## Erforderliche Vercel-Umgebungsvariablen
+
+### Geheimnisse und Datenbank
+
+- `DATABASE_URL` oder `moosburg_DATABASE_URL`: gepoolte PostgreSQL-Verbindungsadresse der jeweiligen Umgebung. Die URL enthält Zugangsdaten und ist wie ein Passwort zu behandeln. Genau einer der beiden Namen genügt.
+- `ADMIN_PASSWORD`: einzigartiges Passwort für den Praxis-Login. Empfohlen sind mindestens 20 zufällige Zeichen aus einem Passwortmanager. Nicht für andere Dienste oder Umgebungen wiederverwenden.
+- `ADMIN_SESSION_SECRET`: signiert die HttpOnly-Session. Pro Umgebung mindestens 32 kryptografisch zufällige Bytes verwenden. Eine Rotation meldet alle bestehenden Admin-Sessions ab.
+- `ADMIN_ENCRYPTION_KEY`: verschlüsselt das gespeicherte SMTP-Passwort per AES-256-GCM. Pro Umgebung mindestens 32 kryptografisch zufällige Bytes verwenden und getrennt vom Session-Secret aufbewahren. Dieser Wert muss dauerhaft verfügbar bleiben; nach einer Rotation kann das bisher gespeicherte SMTP-Passwort nicht mehr entschlüsselt werden und muss im Adminbereich neu eingetragen werden.
+- `CRON_SECRET`: schützt den automatischen Versandlauf. Nur für Production erforderlich, mindestens 32 kryptografisch zufällige Bytes und niemals identisch mit einem anderen Secret.
+
+Die vier Secrets müssen unabhängig voneinander sein. Werte mit einem Passwortmanager oder einem kryptografisch sicheren Secret-Generator erzeugen, niemals aus Namen, Praxisdaten oder wiederkehrenden Mustern ableiten. Secrets nicht in Quellcode, Dokumentation, Screenshots, Tickets, Chatnachrichten oder Git-Commits einfügen. Bei vermuteter Offenlegung den betroffenen Wert sofort in Vercel rotieren; beim `ADMIN_ENCRYPTION_KEY` anschließend das SMTP-Passwort neu speichern.
+
+### Öffentliche und optionale Variablen
+
+- `VITE_STORYBLOK_TOKEN`: ausschließlich ein **Public/Published Content Delivery Token** für veröffentlichte Website-Inhalte. Jede Variable mit Präfix `VITE_` wird in das öffentliche Browser-Bundle eingebaut und ist kein Secret.
+- `MAX_REMINDERS_PER_RUN` (optional): maximales Versandvolumen pro Lauf, Standard `25`, maximal `100`. Diese Zahl ist kein Secret.
+- `REMINDER_GRACE_DAYS` (optional): Zeitraum, in dem fehlgeschlagene oder wegen eines Ausfalls verpasste Erinnerungen erneut geprüft werden, Standard `7`, maximal `30` Tage.
+
+Ein Storyblok **Preview Token**, Management Token oder Personal Access Token darf niemals als `VITE_STORYBLOK_TOKEN`, in einer anderen `VITE_`-Variable oder im Repository gespeichert werden. Management-Zugriffe für einmalige lokale Importskripte nur über eine lokale, nicht eingecheckte Umgebungsvariable beziehungsweise geschützte Script Properties ausführen und den Token danach widerrufen. In Production werden ausschließlich veröffentlichte Storyblok-Inhalte geladen.
+
+## Preview-Deployments schützen
+
+Im Vercel-Projekt unter **Settings → Deployment Protection** alle Preview-Deployments mit Vercel Authentication oder einer gleichwertigen Zugriffskontrolle schützen. Nur berechtigte Teammitglieder dürfen Preview-URLs öffnen. Die öffentliche Production-Domain der Praxis bleibt davon ausgenommen.
+
+Zusätzlich gilt:
+
+- Preview-Links nicht öffentlich teilen oder in Suchmaschinen indexieren lassen.
+- In Preview nur synthetische Patient:innen verwenden; keine Exporte oder Backups aus Production importieren.
+- Kein produktives SMTP-Konto in Preview testen. Ein Testversand darf ausschließlich an kontrollierte Testpostfächer gehen.
+- Production-Secrets niemals temporär in Preview kopieren. Für jeden Scope eigene Werte erzeugen.
+- Nach Änderungen an Variablen die betroffene Umgebung neu deployen und anschließend Login, Datenbankzugriff und – nur in Production – den Cron-Schutz prüfen.
 
 ## Automatischer Versand
 
-Vercel ruft täglich um 07:00 Uhr UTC `/api/admin-reminders/dispatch` auf. Die Fälligkeit wird unabhängig davon in `Europe/Berlin` berechnet. Jeder Versand wird mit einer eindeutigen Kombination aus Regel, Termin und geplantem Versanddatum protokolliert; Wiederholungen des Cron-Laufs erzeugen deshalb keine Doppelmail.
+Vercel ruft täglich um 07:00 Uhr UTC `/api/admin-reminders/dispatch` auf. Die Fälligkeit wird unabhängig davon in `Europe/Berlin` berechnet. Jeder Versand wird mit einer eindeutigen Kombination aus Regel, Termin und geplantem Versanddatum protokolliert. Ein nach SMTP-Versand nicht sicher abgeschlossener Lauf wird als „Versandstatus unklar“ quarantänisiert und nicht automatisch wiederholt, damit keine unkontrollierte Doppelmail entsteht.
 
 ## Terminverwaltung und Online-Buchung
 
@@ -40,9 +81,16 @@ Termine besitzen Felder für Quellsystem, externe ID, Synchronisationsstatus und
 
 Unter `/verwaltung/kostenvoranschlaege` werden Kostenvoranschläge relational in PostgreSQL gespeichert. Jeder Stand ist mit einer Patientin oder einem Patienten verknüpft und enthält Preis-Snapshots der einzelnen Positionen, Status, Gültigkeit, Version, Patient:innenhinweise, interne Notizen und ein Ereignisprotokoll. Angenommene Kostenvoranschläge sind gegen nachträgliche Bearbeitung gesperrt; Änderungen werden als neue Version angelegt.
 
-Der Leistungskatalog wird bewusst nicht mit unbestätigten BEMA-, GOZ- oder KZVB-Werten vorbelegt. Festpreise und das optionale Modell `Punkte × Punktwert` müssen von der Praxis fachlich geprüft und gepflegt werden. Eine erwartete Kassenbeteiligung wird manuell erfasst und nicht pauschal angenommen. Der öffentliche Preisrechner aus dem Referenzprojekt wird nicht übernommen.
+Der Admin enthält einen kuratierten Import des offiziellen KFO-relevanten BEMA-Katalogs mit Stand 01.01.2026. Die bundeseinheitlichen BEMA-Punkte und der regional bzw. kassengruppenbezogen geltende KFO-Punktwert werden getrennt verwaltet. Über „Aktuelles Quartal von KZVB abrufen“ lädt die Anwendung ausschließlich die offizielle Quartals-CSV der KZVB; alternativ können CSV- oder XLSX-Dateien mit Vorschau und Zeilenprüfung importiert werden. Änderungen am BEMA müssen nach Veröffentlichung einer neuen offiziellen Fassung bewusst als neuer Katalogstand übernommen und fachlich kontrolliert werden.
 
-Die geschützte Druckansicht lässt sich über den Browser drucken oder als PDF speichern. Der E-Mail-Versand nutzt die bereits gespeicherten SMTP-Einstellungen; zusätzliche Vercel-Variablen sind dafür nicht erforderlich.
+Ein Kostenvoranschlag speichert die verwendeten BEMA-Punkte, das Punktwert-Quartal, die Kassenart und den verwendeten KFO-Punktwert als historischen Snapshot. So bleiben bereits erstellte Stände nachvollziehbar, auch wenn später neue Quartalswerte importiert werden. Der berechnete BEMA-Honorarbetrag ist keine individuelle Erstattungszusage. KIG-Voraussetzungen, gesetzlicher Versichertenanteil, Mehr- und Zusatzleistungen sowie private Versicherungsbedingungen müssen separat geprüft werden; die voraussichtliche Kassenbeteiligung bleibt deshalb bewusst manuell. Der öffentliche Preisrechner aus dem Referenzprojekt wird nicht übernommen.
+
+Offizielle Quellen:
+
+- KZBV: `https://www.kzbv.de/zahnaerzte/rechtsgrundlagen/bema-und-goz/gebuehrenverzeichnisse/`
+- KZVB Punktwerte: `https://www.kzvb.de/abrechnung/punktwerte`
+
+Die geschützte Druckansicht lässt sich über den Browser drucken oder als PDF speichern. Aus Datenschutzgründen wird der eigentliche Kostenvoranschlag nicht unverschlüsselt per E-Mail verschickt. Der optionale SMTP-Versand sendet nur einen neutralen Abholhinweis; nach einer sicheren Übergabe markiert die Praxis den Stand manuell als „Versendet“.
 
 ## Datenschutz und Betrieb
 

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router";
-import { isIieBookingLive } from "../../../config/booking";
+import { PageMeta } from "../PageMeta";
 
 export function ImpressumDatenschutzPage() {
   const { hash } = useLocation();
@@ -18,6 +18,11 @@ export function ImpressumDatenschutzPage() {
 
   return (
     <main className="pt-20 md:pt-24">
+      <PageMeta
+        title="Impressum & Datenschutz | KFO Moosburg"
+        description="Impressum und Datenschutzhinweise der Kieferorthopädie Moosburg, Praxis Dr. Amann und Dr. Burg."
+        path="/impressum-datenschutz"
+      />
       <div className="px-5 md:px-10">
         <div className="max-w-3xl mx-auto py-12 md:py-20">
 
@@ -161,156 +166,122 @@ export function ImpressumDatenschutzPage() {
                 </div>
 
                 <div>
-                  <h3 className="text-[#0d1317] text-lg mb-2" style={{ fontWeight: 600 }}>Kontaktformular</h3>
-                  <h4 className="text-[#0d1317] mb-1" style={{ fontWeight: 600 }}>Art und Zweck der Verarbeitung:</h4>
+                  <h3 className="text-[#0d1317] text-lg mb-2" style={{ fontWeight: 600 }}>Hosting und technische Bereitstellung über Vercel</h3>
                   <p>
-                    Die von Ihnen eingegebenen Daten werden zum Zweck der individuellen Kommunikation mit Ihnen gespeichert. Hierfür ist die Angabe einer validen E-Mail-Adresse sowie Ihres Namens erforderlich. Diese dient der Zuordnung der Anfrage und der anschließenden Beantwortung derselben. Die Angabe weiterer Daten ist optional.
-                  </p>
-                </div>
-
-                <div>
-                  <h4 className="text-[#0d1317] mb-1" style={{ fontWeight: 600 }}>Rechtsgrundlage:</h4>
-                  <p>
-                    Die Verarbeitung der in das Kontaktformular eingegebenen Daten erfolgt auf der Grundlage eines berechtigten Interesses (Art. 6 Abs. 1 lit. f DSGVO).
+                    Die Website und ihre serverseitigen Funktionen werden über die Infrastruktur von Vercel bereitgestellt. Beim Aufruf verarbeitet die Hosting-Infrastruktur technisch erforderliche Verbindungsdaten, insbesondere IP-Adresse, Zeitpunkt, aufgerufene Adresse und Browserinformationen, um die Seite auszuliefern sowie Stabilität und Sicherheit zu gewährleisten.
                   </p>
                   <p>
-                    Durch Bereitstellung des Kontaktformulars möchten wir Ihnen eine unkomplizierte Kontaktaufnahme ermöglichen. Ihre gemachten Angaben werden zum Zwecke der Bearbeitung der Anfrage sowie für mögliche Anschlussfragen gespeichert.
-                  </p>
-                  <p>
-                    Sofern Sie mit uns Kontakt aufnehmen, um ein Angebot zu erfragen, erfolgt die Verarbeitung der in das Kontaktformular eingegebenen Daten zur Durchführung vorvertraglicher Maßnahmen (Art. 6 Abs. 1 lit. b DSGVO).
-                  </p>
-                </div>
-
-                <div>
-                  <h4 className="text-[#0d1317] mb-1" style={{ fontWeight: 600 }}>Empfänger:</h4>
-                  <p>Empfänger der Daten sind ggf. Auftragsverarbeiter.</p>
-                </div>
-
-                <div>
-                  <h4 className="text-[#0d1317] mb-1" style={{ fontWeight: 600 }}>Speicherdauer:</h4>
-                  <p>Daten werden spätestens 6 Monate nach Bearbeitung der Anfrage gelöscht.</p>
-                  <p>
-                    Sofern es zu einem Vertragsverhältnis kommt, unterliegen wir den gesetzlichen Aufbewahrungsfristen nach HGB und löschen Ihre Daten nach Ablauf dieser Fristen.
-                  </p>
-                </div>
-
-                <div>
-                  <h4 className="text-[#0d1317] mb-1" style={{ fontWeight: 600 }}>Bereitstellung vorgeschrieben oder erforderlich:</h4>
-                  <p>
-                    Die Bereitstellung Ihrer personenbezogenen Daten erfolgt freiwillig. Wir können Ihre Anfrage jedoch nur bearbeiten, sofern Sie uns Ihren Namen, Ihre E-Mail-Adresse und den Grund der Anfrage mitteilen.
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="text-[#0d1317] text-lg mb-2" style={{ fontWeight: 600 }}>Verwendung von Google Analytics</h3>
-                  <p>
-                    Soweit Sie ihre Einwilligung gegeben haben, wird auf dieser Website Google Analytics eingesetzt, ein Webanalysedienst der Google LLC, 1600 Amphitheatre Parkway, Mountain View, CA 94043 USA (nachfolgend: „Google"). Google Analytics verwendet sog. „Cookies", also Textdateien, die auf Ihrem Computer gespeichert werden und die eine Analyse der Benutzung der Webseite durch Sie ermöglichen. Die durch das Cookie erzeugten Informationen über Ihre Benutzung dieser Webseite werden in der Regel an einen Server von Google in den USA übertragen und dort gespeichert. Aufgrund der Aktivierung der IP-Anonymisierung auf diesen Webseiten, wird Ihre IP-Adresse von Google jedoch innerhalb von Mitgliedstaaten der Europäischen Union oder in anderen Vertragsstaaten des Abkommens über den Europäischen Wirtschaftsraum zuvor gekürzt. Nur in Ausnahmefällen wird die volle IP-Adresse an einen Server von Google in den USA übertragen und dort gekürzt. Die im Rahmen von Google Analytics von Ihrem Browser übermittelte IP-Adresse wird nicht mit anderen Daten von Google zusammengeführt.
-                  </p>
-                  <p>
-                    Nähere Informationen zu Nutzungsbedingungen und Datenschutz finden Sie unter{" "}
-                    <a href="https://www.google.com/analytics/terms/de.html" target="_blank" rel="noopener noreferrer" className="text-[#f58a07] hover:underline break-all">
-                      https://www.google.com/analytics/terms/de.html
-                    </a>{" "}
-                    und unter{" "}
-                    <a href="https://policies.google.com/?hl=de" target="_blank" rel="noopener noreferrer" className="text-[#f58a07] hover:underline break-all">
-                      https://policies.google.com/?hl=de
-                    </a>.
-                  </p>
-                  <p>
-                    Im Auftrag des Betreibers dieser Website wird Google diese Informationen benutzen, um Ihre Nutzung der Webseite auszuwerten, um Reports über die Webseitenaktivitäten zusammenzustellen und um weitere mit der Websitenutzung und der Internetnutzung verbundene Dienstleistungen gegenüber dem Webseitenbetreiber zu erbringen.
-                  </p>
-                  <p>
-                    Die von uns gesendeten und mit Cookies, Nutzerkennungen (z. B. User-ID) oder Werbe-IDs verknüpften Daten werden nach 14 Monaten automatisch gelöscht. Die Löschung von Daten, deren Aufbewahrungsdauer erreicht ist, erfolgt automatisch einmal im Monat.
-                  </p>
-                </div>
-
-                <div>
-                  <h4 className="text-[#0d1317] mb-1" style={{ fontWeight: 600 }}>Widerruf der Einwilligung:</h4>
-                  <p>
-                    Sie können das Tracking durch Google Analytics auf unserer Website unterbinden, indem Sie einen Opt-out-Cookie setzen. Damit wird die Erfassung durch Google Analytics für diese Website und für diesen Browser zukünftig verhindert, solange das Cookie in Ihrem Browser installiert bleibt.
-                  </p>
-                  <p>
-                    Sie können darüber hinaus die Speicherung der Cookies durch eine entsprechende Einstellung Ihrer Browser-Software verhindern; wir weisen Sie jedoch darauf hin, dass Sie in diesem Fall gegebenenfalls nicht sämtliche Funktionen dieser Website vollumfänglich werden nutzen können.
-                  </p>
-                  <p>
-                    Sie können darüber hinaus die Erfassung der durch das Cookie erzeugten und auf Ihre Nutzung der Webseite bezogenen Daten (inkl. Ihrer IP-Adresse) an Google sowie die Verarbeitung dieser Daten durch Google verhindern, indem sie das unter dem folgenden Link verfügbare Browser-Plugin herunterladen und installieren:{" "}
-                    <a href="http://tools.google.com/dlpage/gaoptout?hl=de" target="_blank" rel="noopener noreferrer" className="text-[#f58a07] hover:underline break-all">
-                      Browser Add On zur Deaktivierung von Google Analytics
+                    Informationen zum Umgang des Anbieters mit personenbezogenen Daten finden Sie in der{" "}
+                    <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-[#f58a07] hover:underline">
+                      Datenschutzerklärung von Vercel
                     </a>.
                   </p>
                 </div>
 
                 <div>
-                  <h3 className="text-[#0d1317] text-lg mb-2" style={{ fontWeight: 600 }}>Verwendung von Scriptbibliotheken (Google Webfonts)</h3>
+                  <h3 className="text-[#0d1317] text-lg mb-2" style={{ fontWeight: 600 }}>Veröffentlichte Website-Inhalte über Storyblok</h3>
                   <p>
-                    Um unsere Inhalte browserübergreifend korrekt und grafisch ansprechend darzustellen, verwenden wir auf dieser Website „Google Web Fonts" der Google LLC (1600 Amphitheatre Parkway, Mountain View, CA 94043, USA; nachfolgend „Google") zur Darstellung von Schriften.
+                    Texte und freigegebene Medien der öffentlichen Website werden über das Content-Management-System und Content Delivery Network von Storyblok bereitgestellt. Beim Abruf solcher Inhalte kann Ihr Browser eine direkte Verbindung zu Storyblok-Domains herstellen und dabei technisch erforderliche Verbindungsdaten, insbesondere die IP-Adresse, übermitteln.
                   </p>
                   <p>
-                    Weitere Informationen zu Google Web Fonts finden Sie unter{" "}
-                    <a href="https://developers.google.com/fonts/faq" target="_blank" rel="noopener noreferrer" className="text-[#f58a07] hover:underline break-all">
-                      https://developers.google.com/fonts/faq
-                    </a>{" "}
-                    und in der Datenschutzerklärung von Google:{" "}
-                    <a href="https://www.google.com/policies/privacy/" target="_blank" rel="noopener noreferrer" className="text-[#f58a07] hover:underline break-all">
-                      https://www.google.com/policies/privacy/
+                    Storyblok dient hier der Veröffentlichung allgemeiner Website-Inhalte. Patientenstammdaten und Vorgänge aus dem internen Verwaltungsbereich werden davon getrennt in der Praxisdatenbank gespeichert. Weitere Anbieterinformationen finden Sie auf{" "}
+                    <a href="https://www.storyblok.com" target="_blank" rel="noopener noreferrer" className="text-[#f58a07] hover:underline">
+                      storyblok.com
                     </a>.
                   </p>
                 </div>
 
                 <div>
-                  <h3 className="text-[#0d1317] text-lg mb-2" style={{ fontWeight: 600 }}>Verwendung von Google Maps</h3>
+                  <h3 className="text-[#0d1317] text-lg mb-2" style={{ fontWeight: 600 }}>Interner Verwaltungsbereich und Praxisdatenbank</h3>
                   <p>
-                    Auf dieser Website nutzen wir das Angebot von Google Maps. Google Maps wird von Google LLC, 1600 Amphitheatre Parkway, Mountain View, CA 94043, USA (nachfolgend „Google") betrieben. Dadurch können wir Ihnen interaktive Karten direkt in der Webseite anzeigen und ermöglichen Ihnen die komfortable Nutzung der Karten-Funktion.
+                    Unter <code>/verwaltung</code> betreibt die Praxis einen nicht öffentlichen Verwaltungsbereich. Der Zugriff ist für autorisierte Mitglieder des Praxisteams bestimmt. Dort können unter anderem Patienten- und Kundenstammdaten, Kontaktdaten, Termine, Statusangaben, Erinnerungen und Kostenvoranschläge verarbeitet werden.
                   </p>
                   <p>
-                    Nähere Informationen über die Datenverarbeitung durch Google können Sie den Google-Datenschutzhinweisen entnehmen:{" "}
+                    Die Daten werden in einer PostgreSQL-Datenbank gespeichert, die technisch über Neon bereitgestellt wird. Je nach Eintrag können darunter Gesundheitsdaten und damit besonders geschützte personenbezogene Daten sein. Solche Daten dürfen nur im erforderlichen Umfang erfasst und innerhalb des berechtigten Praxisteams eingesehen werden. Umfang und Dauer der Speicherung richten sich nach dem jeweiligen Behandlungs- oder Verwaltungszweck sowie den für die Praxis geltenden Aufbewahrungspflichten.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-[#0d1317] text-lg mb-2" style={{ fontWeight: 600 }}>E-Mail-Versand über den Praxis-SMTP-Dienst</h3>
+                  <p>
+                    Für von der Praxis ausgelöste E-Mails, beispielsweise Terminerinnerungen, wird der im Verwaltungsbereich konfigurierte SMTP-Dienstleister verwendet. Zur Zustellung werden insbesondere Empfängeradresse, Absender, Betreff, Nachrichteninhalt und technische Versanddaten an diesen Dienst übermittelt.
+                  </p>
+                  <p>
+                    Der konkrete SMTP-Anbieter wird von der Praxis konfiguriert und kann wechseln. Auskunft über den aktuell eingesetzten Anbieter und die für einen konkreten Versand verarbeiteten Daten erhalten Sie über die oben genannten Praxiskontaktdaten.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-[#0d1317] text-lg mb-2" style={{ fontWeight: 600 }}>Kontaktaufnahme</h3>
+                  <p>
+                    Auf dieser Website gibt es kein Kontaktformular. Sie können die Praxis über die angegebenen Telefon-, E-Mail- und WhatsApp-Links kontaktieren. Erst wenn Sie einen solchen Link auswählen, wird die zugehörige Telefon-, E-Mail- oder Drittanbieter-Anwendung geöffnet.
+                  </p>
+                  <p>
+                    Wenn Sie uns kontaktieren, verarbeiten wir Ihre Angaben zur Bearbeitung und Beantwortung Ihrer Anfrage sowie, soweit erforderlich, zur Vorbereitung oder Durchführung des Behandlungsverhältnisses. Gesetzliche Aufbewahrungspflichten bleiben unberührt.
+                  </p>
+                  <p>
+                    Bitte übermitteln Sie besonders sensible Gesundheitsdaten nicht unaufgefordert per unverschlüsselter E-Mail oder WhatsApp. Rufen Sie uns im Zweifel zunächst an.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-[#0d1317] text-lg mb-2" style={{ fontWeight: 600 }}>Cookies, lokaler Speicher und Webanalyse</h3>
+                  <p>
+                    Auf den öffentlich zugänglichen Seiten setzen wir derzeit weder Google Analytics noch andere Webanalyse- oder Marketing-Tracker ein. Entsprechend werden hierfür keine Analyse- oder Marketing-Cookies gesetzt.
+                  </p>
+                  <p>
+                    Damit ein bereits geschlossenes Hinweisfenster innerhalb derselben Browser-Sitzung nicht erneut erscheint, kann ausschließlich eine technische Sitzungsmarkierung im Session Storage Ihres Browsers gespeichert werden. Sie enthält keine Kontakt- oder Gesundheitsdaten, wird nicht an uns übertragen und beim Beenden der Browser-Sitzung verworfen.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-[#0d1317] text-lg mb-2" style={{ fontWeight: 600 }}>Schriftarten</h3>
+                  <p>
+                    Die Website lädt keine Schriftarten von Google Fonts oder einem anderen externen Schriftanbieter. Es werden lokal auf Ihrem Gerät verfügbare Systemschriften verwendet; dabei wird keine Verbindung zu einem Schrift-CDN hergestellt.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-[#0d1317] text-lg mb-2" style={{ fontWeight: 600 }}>Google Maps nach Aktivierung</h3>
+                  <p>
+                    Die Karte von Google Maps ist beim Aufruf der Seite zunächst deaktiviert. Solange Sie nicht auf „Google Maps laden“ klicken, wird kein Karteninhalt von Google geladen und über die Karte keine Verbindung zu Google hergestellt.
+                  </p>
+                  <p>
+                    Nach Ihrer Aktivierung wird ein Karten-Frame von Google geladen. Dabei können insbesondere Ihre IP-Adresse, Browserinformationen und die aufgerufene Seite an Google übermittelt werden. Sind Sie bei Google angemeldet, kann Google den Aufruf Ihrem Konto zuordnen. Die Aktivierung gilt für den aktuellen Seitenaufruf; nach einem Neuladen ist die Karte wieder deaktiviert.
+                  </p>
+                  <p>
+                    Weitere Informationen finden Sie in den{" "}
                     <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-[#f58a07] hover:underline break-all">
-                      https://policies.google.com/privacy
-                    </a>. Dort können Sie im Datenschutzcenter auch Ihre persönlichen Datenschutz-Einstellungen verändern.
-                  </p>
-                  <p>
-                    Ausführliche Anleitungen zur Verwaltung der eigenen Daten im Zusammenhang mit Google-Produkten finden Sie hier:{" "}
-                    <a href="https://www.dataliberation.org/" target="_blank" rel="noopener noreferrer" className="text-[#f58a07] hover:underline break-all">
-                      https://www.dataliberation.org
-                    </a>
-                  </p>
-                  <p>
-                    Durch den Besuch der Website erhält Google Informationen, dass Sie die entsprechende Unterseite unserer Webseite aufgerufen haben. Dies erfolgt unabhängig davon, ob Google ein Nutzerkonto bereitstellt, über das Sie eingeloggt sind, oder ob kein Nutzerkonto besteht. Wenn Sie bei Google eingeloggt sind, werden Ihre Daten direkt Ihrem Konto zugeordnet.
-                  </p>
-                  <p>
-                    Wenn Sie die Zuordnung in Ihrem Profil bei Google nicht wünschen, müssen Sie sich vor Aktivierung des Buttons bei Google ausloggen. Google speichert Ihre Daten als Nutzungsprofile und nutzt sie für Zwecke der Werbung, Marktforschung und/oder bedarfsgerechter Gestaltung seiner Websites. Eine solche Auswertung erfolgt insbesondere (selbst für nicht eingeloggte Nutzer) zur Erbringung bedarfsgerechter Werbung und um andere Nutzer des sozialen Netzwerks über Ihre Aktivitäten auf unserer Website zu informieren. Ihnen steht ein Widerspruchsrecht zu gegen die Bildung dieser Nutzerprofile, wobei Sie sich zur Ausübung dessen an Google richten müssen.
+                      Datenschutzhinweisen von Google
+                    </a>.
                   </p>
                 </div>
 
                 <div>
-                  <h4 className="text-[#0d1317] mb-1" style={{ fontWeight: 600 }}>Widerruf der Einwilligung:</h4>
-                  <p>
-                    Vom Anbieter wird derzeit keine Möglichkeit für einen einfachen Opt-out oder ein Blockieren der Datenübertragung angeboten. Wenn Sie eine Nachverfolgung Ihrer Aktivitäten auf unserer Website verhindern wollen, widerrufen Sie bitte im Cookie-Consent-Tool Ihre Einwilligung für die entsprechende Cookie-Kategorie oder alle technisch nicht notwendigen Cookies und Datenübertragungen. In diesem Fall können Sie unsere Website jedoch ggfs. nicht oder nur eingeschränkt nutzen.
-                  </p>
+                    <h3 className="text-[#0d1317] text-lg mb-2" style={{ fontWeight: 600 }}>Online-Terminvereinbarung (DR.FLEX)</h3>
+                    <p>
+                      Die Schaltflächen zur Online-Terminvereinbarung öffnen die externe DR.FLEX-Seite in einem neuen Browser-Tab. Auf dieser Website ist kein DR.FLEX-Skript oder -Frame eingebettet; vor Ihrem Klick wird daher keine Verbindung zu DR.FLEX hergestellt.
+                    </p>
+                    <p>
+                      Nach dem Öffnen gelten die Datenschutzbestimmungen des externen Anbieters. Angaben, die Sie dort eingeben, werden unmittelbar auf dessen Website verarbeitet. Weitere Informationen finden Sie auf{" "}
+                      <a href="https://dr-flex.de" target="_blank" rel="noopener noreferrer" className="text-[#f58a07] hover:underline">
+                        dr-flex.de
+                      </a>.
+                    </p>
                 </div>
 
-                {isIieBookingLive() && (
-                  <div>
-                    <h3 className="text-[#0d1317] text-lg mb-2" style={{ fontWeight: 600 }}>Online-Terminvereinbarung (iie-systems)</h3>
-                    <p>
-                      Wir verwenden Anwendungen von iie-systems GmbH &amp; Co. KG, Georgstrasse 24, 49809 Lingen.
-                    </p>
-                    <p>Durch diese Anwendungen können Patienten online über die Webseite</p>
-                    <ol className="list-decimal pl-5 space-y-1 mt-2">
-                      <li>Online Termine vereinbaren.</li>
-                      <li>Eine digitale Sprechstunde nutzen. (gilt nur für Anwender mit der Anwendung my Images)</li>
-                    </ol>
-                    <p className="mt-2">
-                      Weiterhin nutzen wir in der Praxis einen Terminservice zur Patienteninformation per E-Mail.
-                    </p>
-                    <p>
-                      Nähere Informationen zum Datenschutz bei iie-systems finden Sie unter:{" "}
-                      <a href="https://www.iie-systems.de/service/datenschutz/" target="_blank" rel="noopener noreferrer" className="text-[#f58a07] hover:underline break-all">
-                        https://www.iie-systems.de/service/datenschutz/
-                      </a>
-                    </p>
-                  </div>
-                )}
+                <div>
+                  <h3 className="text-[#0d1317] text-lg mb-2" style={{ fontWeight: 600 }}>Digitaler Anamnesebogen (Adobe Acrobat Sign)</h3>
+                  <p>
+                    Der Link zum digitalen Anamnesebogen öffnet eine externe Seite von Adobe Acrobat Sign in einem neuen Browser-Tab. Der Dienst ist nicht in diese Website eingebettet; eine Verbindung zu Adobe wird erst hergestellt, wenn Sie den Link auswählen.
+                  </p>
+                  <p>
+                    Angaben im Anamnesebogen können Gesundheitsdaten und damit besonders geschützte personenbezogene Daten enthalten. Diese Eingaben erfolgen unmittelbar auf der externen Adobe-Seite. Bitte nutzen Sie den Dienst nur, wenn Sie die dort angezeigten Hinweise geprüft haben. Informationen zur Datenverarbeitung finden Sie in der{" "}
+                    <a href="https://www.adobe.com/privacy/policy.html" target="_blank" rel="noopener noreferrer" className="text-[#f58a07] hover:underline">
+                      Datenschutzerklärung von Adobe
+                    </a>.
+                  </p>
+                </div>
 
                 <div>
                   <h3 className="text-[#0d1317] text-lg mb-2" style={{ fontWeight: 600 }}>SSL-Verschlüsselung</h3>

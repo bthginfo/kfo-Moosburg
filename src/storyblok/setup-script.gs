@@ -566,7 +566,7 @@ function setupAll() {
   Logger.log("1. Storyblok oeffnen > Content > 'Home' und 'Einstellungen' oeffnen");
   Logger.log("2. In den Tabs die Bilder hochladen (Asset-Felder)");
   Logger.log("3. Umlaute korrigieren (ae->ae, oe->oe, ue->ue, ss->ss)");
-  Logger.log("4. Preview Token kopieren: Settings > Access Tokens");
-  Logger.log("5. In Vercel: VITE_STORYBLOK_TOKEN = dein-preview-token setzen");
+  Logger.log("4. Public/Published Delivery Token anlegen: Settings > Access Tokens");
+  Logger.log("5. In Vercel Production: VITE_STORYBLOK_TOKEN = Public Delivery Token setzen");
   Logger.log("6. Fertig! Website liest Content automatisch aus Storyblok");
 }

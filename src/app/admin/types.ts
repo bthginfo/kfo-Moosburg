@@ -143,6 +143,9 @@ export type EstimateCatalogItem = {
   unit: string;
   active: boolean;
   externalReference: string;
+  feeSystem: "BEMA" | "GOZ" | "private";
+  source: string;
+  sourceVersion: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -160,6 +163,22 @@ export type EstimateLineItem = {
   discountPercent: number;
   totalCents: number;
   note: string;
+  feeSystem: "BEMA" | "GOZ" | "private";
+  points: number;
+  pointValue: number;
+};
+
+export type EstimatePointValue = {
+  id: string;
+  quarter: string;
+  fundGroup: number;
+  fundType: string;
+  fundTypeLabel: string;
+  fundNumber: string;
+  pwKfo: number;
+  source: string;
+  sourceUrl: string;
+  importedAt: string;
 };
 
 export type CostEstimate = {
@@ -175,6 +194,8 @@ export type CostEstimate = {
   insuranceType: string;
   insurer: string;
   kigLevel: string;
+  pointValueQuarter: string;
+  insurerGroup: string;
   status: EstimateStatus;
   validUntil: string;
   version: number;
@@ -188,6 +209,7 @@ export type CostEstimate = {
   currency: "EUR";
   sentAt: string;
   acceptedAt: string;
+  pickupNoticeSent: boolean;
   createdAt: string;
   updatedAt: string;
   items: EstimateLineItem[];
@@ -207,9 +229,10 @@ export type EstimateBundle = {
   estimates: CostEstimate[];
   catalog: EstimateCatalogItem[];
   events: EstimateEvent[];
+  pointValues: EstimatePointValue[];
 };
 
-export type EstimateDraft = Omit<CostEstimate, "id" | "number" | "customerName" | "customerBirthDate" | "customerEmail" | "customerAddress" | "subtotalCents" | "patientShareCents" | "currency" | "sentAt" | "acceptedAt" | "createdAt" | "updatedAt" | "version" | "revisionOfId"> & { id?: string };
+export type EstimateDraft = Omit<CostEstimate, "id" | "number" | "customerName" | "customerBirthDate" | "customerEmail" | "customerAddress" | "subtotalCents" | "patientShareCents" | "currency" | "sentAt" | "acceptedAt" | "pickupNoticeSent" | "createdAt" | "updatedAt" | "version" | "revisionOfId"> & { id?: string; updatedAt?: string };
 
 export type Customer = {
   id: string;
@@ -230,6 +253,8 @@ export type Customer = {
   notes?: string;
   reminderConsent: boolean;
   appointments: Appointment[];
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type ReminderAudience = "all" | "selected";
@@ -246,6 +271,21 @@ export type ReminderRule = {
   customerIds: string[];
   nextRun?: string;
   sentCount?: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ReminderDelivery = {
+  id: string;
+  reminderId: string;
+  appointmentId: string;
+  customerId: string;
+  recipient: string;
+  scheduledDate: string;
+  status: "processing" | "sent" | "failed" | "uncertain";
+  sentAt: string;
+  error: string;
+  updatedAt: string;
 };
 
 export type SmtpSettings = {
@@ -253,11 +293,12 @@ export type SmtpSettings = {
   hasPassword?: boolean;
   host: string;
   port: number;
-  security: "tls" | "starttls" | "none";
+  security: "tls" | "starttls";
   username: string;
   senderName: string;
   senderEmail: string;
   replyToEmail?: string;
+  updatedAt: string;
 };
 
 export type DashboardData = {
@@ -288,5 +329,5 @@ export type AdminSession = {
   setupRequired?: boolean;
 };
 
-export type CustomerDraft = Omit<Customer, "id"> & { id?: string };
-export type ReminderDraft = Omit<ReminderRule, "id"> & { id?: string };
+export type CustomerDraft = Omit<Customer, "id" | "createdAt" | "updatedAt"> & { id?: string; createdAt?: string; updatedAt?: string };
+export type ReminderDraft = Omit<ReminderRule, "id" | "createdAt" | "updatedAt"> & { id?: string; createdAt?: string; updatedAt?: string };

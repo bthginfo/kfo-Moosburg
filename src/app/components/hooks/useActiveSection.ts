@@ -5,7 +5,7 @@ const SECTION_IDS = ["uber-uns", "leistungen", "team", "anamnesebogen", "kontakt
 /**
  * Returns the currently visible section ID based on scroll position.
  */
-export function useActiveSection() {
+export function useActiveSection(routeKey = "") {
   const [activeId, setActiveId] = useState<string>("");
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export function useActiveSection() {
     });
 
     return () => observer.disconnect();
-  }, []);
+  }, [routeKey]);
 
   return activeId;
 }

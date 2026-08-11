@@ -1,12 +1,42 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "vite build",
   "outputDirectory": "dist",
   "crons": [
     { "path": "/api/admin-reminders/dispatch", "schedule": "0 7 * * *" }
   ],
-  "rewrites": [
-    { "source": "/sitemap.xml", "destination": "/sitemap.xml" },
-    { "source": "/robots.txt", "destination": "/robots.txt" },
-    { "source": "/(.*)", "destination": "/index.html" }
+  "routes": [
+    {
+      "src": "/(.*)",
+      "continue": true,
+      "headers": {
+        "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+        "Cross-Origin-Opener-Policy": "same-origin",
+        "Content-Security-Policy": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://api.storyblok.com https://*.storyblok.com; frame-src https://www.google.com https://www.google.de; upgrade-insecure-requests"
+      }
+    },
+    {
+      "src": "/verwaltung(?:/.*)?",
+      "continue": true,
+      "headers": {
+        "Cache-Control": "private, no-store, max-age=0",
+        "X-Robots-Tag": "noindex, nofollow, noarchive"
+      }
+    },
+    { "handle": "filesystem" },
+    { "src": "/api/(.*)", "dest": "/api/not-found" },
+    { "src": "/", "dest": "/index.html" },
+    { "src": "/impressum-datenschutz/?", "dest": "/index.html" },
+    { "src": "/verwaltung(?:/.*)?", "dest": "/index.html" },
+    {
+      "src": "/(.*)",
+      "status": 404,
+      "dest": "/index.html",
+      "headers": { "X-Robots-Tag": "noindex, nofollow, noarchive" }
+    }
   ]
 }

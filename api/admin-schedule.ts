@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+import type { VercelRequest, VercelResponse } from "../src/server/vercelTypes.js";
 import { apiError, ensureWriteOrigin, requireAdmin, setPrivateResponse } from "../src/server/kfoAdmin.js";
 import {
   deleteScheduleEntity,
@@ -25,11 +25,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const entity = entityFrom(req);
     if (!entity) return res.status(400).json({ error: "invalid_entity", message: "Unbekannter Termin-Datensatz." });
     if (req.method === "POST" || req.method === "PATCH") {
-      const bundle = await saveScheduleEntity(entity, req.body?.data || {});
+      const input = req.body?.data || {};
+      if (req.method === "PATCH" && !String(input?.id || "").trim()) {
+        return res.status(400).json({ error: "missing_id", message: "Der zu ändernde Termin-Datensatz konnte nicht identifiziert werden." });
+      }
+      const bundle = await saveScheduleEntity(entity, req.method === "POST" ? { ...input, id: "" } : input);
       return res.status(req.method === "POST" ? 201 : 200).json(bundle);
     }
     if (req.method === "DELETE") {
-      const bundle = await deleteScheduleEntity(entity, req.body?.id || req.query.id);
+      const bundle = await deleteScheduleEntity(
+        entity,
+        req.body?.id || req.query.id,
+        req.body?.updatedAt || req.query.updatedAt,
+      );
       return res.status(200).json(bundle);
     }
     return res.status(405).json({ error: "method_not_allowed" });

@@ -12,11 +12,13 @@ import {
   UsersRound,
 } from "lucide-react";
 import { AdminShell, InlineLink } from "../AdminShell";
-import type { Customer, ReminderRule } from "../types";
+import type { Customer, ReminderDelivery, ReminderRule } from "../types";
 
 type Props = {
   customers: Customer[];
   reminders: ReminderRule[];
+  deliveries: ReminderDelivery[];
+  smtpConfigured: boolean;
   onLoggedOut: () => void;
   onAddCustomer: () => void;
 };
@@ -30,15 +32,19 @@ function formatDate(value: string, withYear = true) {
   return new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "short", ...(withYear ? { year: "numeric" } : {}) }).format(date);
 }
 
-export function DashboardPage({ customers, reminders, onLoggedOut, onAddCustomer }: Props) {
+export function DashboardPage({ customers, reminders, deliveries, smtpConfigured, onLoggedOut, onAddCustomer }: Props) {
   const today = berlinToday();
   const appointments = customers.flatMap((customer) => customer.appointments.map((appointment) => ({ customer, appointment })))
-    .filter(({ appointment }) => appointment.date >= today)
+    .filter(({ appointment }) => appointment.date >= today && ["scheduled", "confirmed", "arrived"].includes(appointment.status || "scheduled"))
     .sort((a, b) => `${a.appointment.date}${a.appointment.time}`.localeCompare(`${b.appointment.date}${b.appointment.time}`));
   const todayAppointments = appointments.filter(({ appointment }) => appointment.date === today);
   const enabledRules = reminders.filter((rule) => rule.enabled);
   const eligibleCustomers = customers.filter((customer) => customer.status === "active" && customer.reminderConsent && customer.email);
-  const dueToday = getScheduledSends(customers, enabledRules).filter((item) => item.date === today);
+  const scheduledSends = getScheduledSends(customers, enabledRules, deliveries);
+  const dueToday = scheduledSends.filter((item) => item.date === today);
+  const deliveryIssues = deliveries
+    .filter((delivery) => delivery.status === "failed" || delivery.status === "uncertain")
+    .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
   const activeCustomers = customers.filter((customer) => customer.status === "active").length;
   const greeting = new Date().getHours() < 11 ? "Guten Morgen" : new Date().getHours() < 17 ? "Guten Tag" : "Guten Abend";
   const longDate = new Intl.DateTimeFormat("de-DE", { weekday: "long", day: "2-digit", month: "long", year: "numeric", timeZone: "Europe/Berlin" }).format(new Date());
@@ -59,10 +65,12 @@ export function DashboardPage({ customers, reminders, onLoggedOut, onAddCustomer
             <Metric icon={UsersRound} label="Aktive Kund:innen" value={activeCustomers} detail={`${customers.length} insgesamt`} tone="navy" />
             <Metric icon={CalendarDays} label="Kommende Termine" value={appointments.length} detail={`${todayAppointments.length} heute`} tone="blue" />
             <Metric icon={BellRing} label="Heute fällig" value={dueToday.length} detail={dueToday.length ? "Versand vorbereitet" : "Alles erledigt"} tone={dueToday.length ? "orange" : "green"} />
-            <Metric icon={MailCheck} label="Versandbereit" value={eligibleCustomers.length} detail={`${enabledRules.length} aktive Regeln`} tone="green" />
+            <Metric icon={MailCheck} label={smtpConfigured ? "Versandbereit" : "SMTP fehlt"} value={smtpConfigured ? eligibleCustomers.length : 0} detail={smtpConfigured ? `${enabledRules.length} aktive Regeln` : "In Einstellungen verbinden"} tone={smtpConfigured ? "green" : "orange"} />
           </section>
 
           <TodayBand appointments={todayAppointments.slice(0, 3)} dueToday={dueToday.length} />
+
+          {deliveryIssues.length > 0 && <DeliveryIssues issues={deliveryIssues} />}
 
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,.78fr)]">
             <section className="admin-surface overflow-hidden">
@@ -70,9 +78,9 @@ export function DashboardPage({ customers, reminders, onLoggedOut, onAddCustomer
                 <div><h2 className="!text-[17px] !font-semibold !text-[#173249]">Nächste Erinnerungen</h2><p className="mt-1 !text-[12px] !font-normal !text-[#6c8291]">Automatisch nach Termin und Regel geplant</p></div>
                 <InlineLink to="/verwaltung/erinnerungen">Alle Regeln</InlineLink>
               </div>
-              {getScheduledSends(customers, enabledRules).length ? (
+              {scheduledSends.length ? (
                 <div className="divide-y divide-[#e4edf3]">
-                  {getScheduledSends(customers, enabledRules).slice(0, 5).map((item) => (
+                  {scheduledSends.slice(0, 5).map((item) => (
                     <div key={item.id} className="grid gap-3 px-5 py-4 transition hover:bg-[#f8fbfd] sm:grid-cols-[minmax(160px,1fr)_minmax(150px,.8fr)_auto] sm:items-center sm:px-6">
                       <div className="flex items-center gap-3">
                         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-[#e9f3f9] text-xs font-semibold text-[#063255]">{item.initials}</span>
@@ -101,6 +109,36 @@ export function DashboardPage({ customers, reminders, onLoggedOut, onAddCustomer
         </div>
       )}
     </AdminShell>
+  );
+}
+
+function DeliveryIssues({ issues }: { issues: ReminderDelivery[] }) {
+  const uncertain = issues.filter((item) => item.status === "uncertain").length;
+  return (
+    <section role="status" className="overflow-hidden rounded-[16px] border border-[#e9b7ad] bg-[#fff8f6] shadow-[0_8px_22px_rgba(112,45,33,.06)]">
+      <div className="flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-start sm:justify-between sm:px-6">
+        <div className="flex min-w-0 items-start gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#fee7e2] text-[#a34435]"><CircleAlert className="h-5 w-5" /></span>
+          <div>
+            <h2 className="!text-[15px] !font-semibold !text-[#76372d]">E-Mail-Versand bitte prüfen</h2>
+            <p className="mt-1 !text-[12px] !leading-5 !text-[#86564d]">
+              {issues.length} Versand{issues.length === 1 ? "" : "vorgänge"} benötigen Aufmerksamkeit.
+              {uncertain > 0 ? ` Bei ${uncertain} davon ist der Versandstatus unklar; diese E-Mails werden zum Schutz vor Doppelversand nicht automatisch wiederholt.` : ""}
+            </p>
+          </div>
+        </div>
+        <Link to="/verwaltung/einstellungen" className="admin-secondary-button h-10 shrink-0 px-4">SMTP prüfen<ChevronRight className="h-4 w-4" /></Link>
+      </div>
+      <div className="divide-y divide-[#f0d9d4] border-t border-[#f0d9d4] bg-white/55">
+        {issues.slice(0, 3).map((item) => (
+          <div key={item.id} className="grid gap-1 px-5 py-3 text-[11px] sm:grid-cols-[120px_minmax(160px,.7fr)_1fr] sm:items-center sm:px-6">
+            <span className={`font-semibold ${item.status === "uncertain" ? "text-[#925c16]" : "text-[#a34435]"}`}>{item.status === "uncertain" ? "Status unklar" : "Fehlgeschlagen"}</span>
+            <span className="truncate text-[#4f6878]">{item.recipient}</span>
+            <span className="truncate text-[#718591]">{item.error || `Geplant für ${formatDate(item.scheduledDate)}`}</span>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -144,18 +182,20 @@ function Onboarding() {
 
 function OnboardingStep({ number, title, text }: { number: string; title: string; text: string }) { return <li className="flex gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-[#063255] text-xs font-semibold text-white">{number}</span><div><div className="text-[13px] font-semibold text-[#234159]">{title}</div><div className="mt-0.5 text-[11px] leading-5 text-[#738895]">{text}</div></div></li>; }
 
-function getScheduledSends(customers: Customer[], rules: ReminderRule[]) {
+function getScheduledSends(customers: Customer[], rules: ReminderRule[], deliveries: ReminderDelivery[]) {
   const today = berlinToday();
   const results: Array<{ id: string; name: string; initials: string; email: string; rule: string; date: string; appointmentDate: string }> = [];
   for (const customer of customers) {
     if (!customer.reminderConsent || !customer.email || customer.status !== "active") continue;
     for (const appointment of customer.appointments) {
+      if (!["scheduled", "confirmed"].includes(appointment.status || "scheduled")) continue;
       for (const rule of rules) {
         if (rule.audience === "selected" && !rule.customerIds.includes(customer.id)) continue;
         const date = new Date(`${appointment.date}T12:00:00`);
         date.setDate(date.getDate() + (rule.relation === "before" ? -rule.days : rule.days));
         const sendDate = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Berlin" }).format(date);
         if (sendDate < today) continue;
+        if (deliveries.some((delivery) => delivery.reminderId === rule.id && delivery.appointmentId === appointment.id && delivery.scheduledDate === sendDate && ["sent", "processing", "uncertain"].includes(delivery.status))) continue;
         results.push({ id: `${customer.id}-${appointment.id ?? appointment.date}-${rule.id}`, name: `${customer.firstName} ${customer.lastName}`, initials: `${customer.firstName[0] ?? ""}${customer.lastName[0] ?? ""}`, email: customer.email, rule: rule.name, date: sendDate, appointmentDate: appointment.date });
       }
     }

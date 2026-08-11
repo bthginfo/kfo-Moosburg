@@ -1,6 +1,5 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { Check, ChevronDown, Clock3, RefreshCw, Search, Trash2, UserRound, X } from "lucide-react";
+import { Check, ChevronDown, Clock3, RefreshCw, Search, Trash2, UserRound } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -38,7 +37,7 @@ export function AppointmentDialog({
   onSave: (data: Record<string, unknown>) => Promise<void>;
 }) {
   const [draft, setDraft] = useState({
-    id: "", customerId: "", date: initialDate, time: "09:00", appointmentTypeId: "",
+    id: "", updatedAt: "", customerId: "", date: initialDate, time: "09:00", appointmentTypeId: "",
     providerId: "", roomId: "", durationMinutes: 30, status: "scheduled" as ScheduleAppointmentStatus, note: "",
     repeatCount: 1, repeatIntervalWeeks: 6,
   });
@@ -47,7 +46,6 @@ export function AppointmentDialog({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const patientTriggerRef = useRef<HTMLButtonElement>(null);
-  const pickerPanelRef = useRef<HTMLElement>(null);
   const pickerSearchRef = useRef<HTMLInputElement>(null);
 
   const practitioners = resources.filter((item) => item.kind === "practitioner" && item.active);
@@ -65,6 +63,7 @@ export function AppointmentDialog({
     if (appointment) {
       setDraft({
         id: appointment.id,
+        updatedAt: appointment.updatedAt,
         customerId: appointment.customerId,
         date: appointment.date,
         time: appointment.time,
@@ -79,34 +78,9 @@ export function AppointmentDialog({
       });
     } else {
       const firstType = activeTypes[0];
-      setDraft({ id: "", customerId: "", date: initialDate, time: "09:00", appointmentTypeId: firstType?.id ?? "", providerId: practitioners[0]?.id ?? "", roomId: rooms[0]?.id ?? "", durationMinutes: firstType?.durationMinutes ?? 30, status: "scheduled", note: "", repeatCount: 1, repeatIntervalWeeks: 6 });
+      setDraft({ id: "", updatedAt: "", customerId: "", date: initialDate, time: "09:00", appointmentTypeId: firstType?.id ?? "", providerId: practitioners[0]?.id ?? "", roomId: rooms[0]?.id ?? "", durationMinutes: firstType?.durationMinutes ?? 30, status: "scheduled", note: "", repeatCount: 1, repeatIntervalWeeks: 6 });
     }
   }, [open, appointment, initialDate]);
-
-  useEffect(() => {
-    if (!pickerOpen) return;
-    const focusSearch = window.requestAnimationFrame(() => pickerSearchRef.current?.focus());
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        setPickerOpen(false);
-        return;
-      }
-      if (event.key !== "Tab" || !pickerPanelRef.current) return;
-      const focusable = Array.from(pickerPanelRef.current.querySelectorAll<HTMLElement>("button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex='-1'])"));
-      if (!focusable.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.cancelAnimationFrame(focusSearch);
-      document.removeEventListener("keydown", handleKeyDown);
-      patientTriggerRef.current?.focus();
-    };
-  }, [pickerOpen]);
 
   function selectType(id: string) {
     const type = appointmentTypes.find((item) => item.id === id);
@@ -140,8 +114,8 @@ export function AppointmentDialog({
           <div className="admin-scrollbar admin-dialog-scroll min-h-0 flex-1 overflow-y-auto px-5 py-6 sm:px-7">
             <div className="grid gap-5 lg:grid-cols-2">
               <div className="relative lg:col-span-2">
-                <span className="admin-label">Patient:in *</span>
-                <button ref={patientTriggerRef} type="button" onClick={() => setPickerOpen((value) => !value)} className="admin-field flex w-full items-center justify-between text-left">
+                <span id="appointment-patient-label" className="admin-label">Patient:in *</span>
+                <button ref={patientTriggerRef} type="button" onClick={() => setPickerOpen((value) => !value)} className="admin-field flex w-full items-center justify-between text-left" aria-labelledby="appointment-patient-label" aria-haspopup="dialog" aria-expanded={pickerOpen} aria-controls="schedule-patient-picker">
                   {selectedCustomer ? <span className="flex min-w-0 items-center gap-3"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] bg-[#e6f1f7] text-[10px] font-semibold text-[#174b6e]">{selectedCustomer.firstName[0]}{selectedCustomer.lastName[0]}</span><span className="truncate text-[13px] font-semibold text-[#29475d]">{selectedCustomer.firstName} {selectedCustomer.lastName}</span></span> : <span className="text-[#8295a1]">Patient:in suchen und auswählen</span>}
                   <ChevronDown className="h-4 w-4 shrink-0 text-[#6f8492]" />
                 </button>
@@ -170,27 +144,41 @@ export function AppointmentDialog({
           <DialogActions error={error} saving={saving} saveLabel={appointment ? "Änderungen speichern" : "Termin anlegen"} onCancel={() => onOpenChange(false)} />
         </form>
       </DialogContent>
-      {pickerOpen && typeof document !== "undefined" && createPortal(
-        <div className="admin-root schedule-ui fixed inset-0 z-[80] flex items-end justify-center bg-[#031d31]/55 p-2 sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-labelledby="patient-picker-title" onMouseDown={() => setPickerOpen(false)}>
-          <section ref={pickerPanelRef} className="admin-enter flex max-h-[min(82dvh,680px)] w-full max-w-[560px] flex-col overflow-hidden rounded-t-[18px] border border-[#bcd1de] bg-white shadow-[0_28px_75px_rgba(4,35,58,.3)] sm:rounded-[18px]" onMouseDown={(event) => event.stopPropagation()}>
-            <header className="flex shrink-0 items-center justify-between border-b border-[#deebf2] px-5 py-4">
-              <div><h2 id="patient-picker-title" className="!text-[16px] !font-semibold !text-[#29475d]">Patient:in auswählen</h2><p className="mt-1 !text-[12px] !font-normal !text-[#718895]">Suche nach Name, E-Mail oder Patientennummer</p></div>
-              <button type="button" onClick={() => setPickerOpen(false)} className="admin-icon-button" aria-label="Patientenauswahl schließen" title="Schließen"><X className="h-4 w-4" /></button>
-            </header>
-            <div className="shrink-0 border-b border-[#e1ebf1] p-4"><label htmlFor="schedule-patient-search" className="admin-label">Patient:in suchen</label><div className="relative"><Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#748b99]" /><input ref={pickerSearchRef} id="schedule-patient-search" className="admin-field admin-field-leading h-11 w-full" value={patientSearch} onChange={(event) => setPatientSearch(event.target.value)} placeholder="Name, E-Mail oder Patientennummer" /></div></div>
-            <div className="admin-scrollbar min-h-0 flex-1 overflow-y-auto p-2">
-              {matchingCustomers.length ? matchingCustomers.map((customer) => (
-                <button key={customer.id} type="button" onClick={() => { setDraft((current) => ({ ...current, customerId: customer.id })); setPickerOpen(false); }} className="flex min-h-12 w-full items-center gap-3 rounded-[10px] px-3 py-2.5 text-left hover:bg-[#eff6fa] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f58a07]">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] bg-[#e7f2f8] text-[11px] font-semibold text-[#174b6e]">{customer.firstName[0]}{customer.lastName[0]}</span>
-                  <span className="min-w-0"><span className="block text-[13px] font-semibold text-[#29475d]">{customer.firstName} {customer.lastName}</span><span className="block truncate text-[11px] text-[#728895]">{customer.patientNumber ? `Pat.-Nr. ${customer.patientNumber} · ` : ""}{customer.email || "Keine E-Mail"}</span></span>
-                  {draft.customerId === customer.id && <Check className="ml-auto h-4 w-4 shrink-0 text-[#2f795a]" />}
-                </button>
-              )) : <div className="px-4 py-10 text-center text-[12px] text-[#718895]">Keine passende Patient:in gefunden.</div>}
+      <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
+        <DialogContent
+          id="schedule-patient-picker"
+          className="admin-root schedule-ui !z-[80] flex max-h-[min(82dvh,680px)] max-w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden rounded-[18px] border-[#bcd1de] bg-white p-0 shadow-[0_28px_75px_rgba(4,35,58,.3)] sm:!max-w-[560px]"
+          onOpenAutoFocus={(event) => {
+            event.preventDefault();
+            pickerSearchRef.current?.focus();
+          }}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            patientTriggerRef.current?.focus();
+          }}
+        >
+          <DialogHeader className="shrink-0 border-b border-[#deebf2] px-5 py-4 pr-14 text-left">
+            <DialogTitle className="!text-[16px] !font-semibold !text-[#29475d]">Patient:in auswählen</DialogTitle>
+            <DialogDescription className="!text-[12px] !font-normal !text-[#718895]">Suche nach Name, E-Mail oder Patientennummer</DialogDescription>
+          </DialogHeader>
+          <div className="shrink-0 border-b border-[#e1ebf1] p-4">
+            <label htmlFor="schedule-patient-search" className="admin-label">Patient:in suchen</label>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#748b99]" />
+              <input ref={pickerSearchRef} id="schedule-patient-search" className="admin-field admin-field-leading h-11 w-full" value={patientSearch} onChange={(event) => setPatientSearch(event.target.value)} placeholder="Name, E-Mail oder Patientennummer" />
             </div>
-          </section>
-        </div>,
-        document.body,
-      )}
+          </div>
+          <div className="admin-scrollbar min-h-0 flex-1 overflow-y-auto p-2">
+            {matchingCustomers.length ? matchingCustomers.map((customer) => (
+              <button key={customer.id} type="button" onClick={() => { setDraft((current) => ({ ...current, customerId: customer.id })); setPickerOpen(false); }} className="flex min-h-12 w-full items-center gap-3 rounded-[10px] px-3 py-2.5 text-left hover:bg-[#eff6fa] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f58a07]">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] bg-[#e7f2f8] text-[11px] font-semibold text-[#174b6e]">{customer.firstName[0]}{customer.lastName[0]}</span>
+                <span className="min-w-0"><span className="block text-[13px] font-semibold text-[#29475d]">{customer.firstName} {customer.lastName}</span><span className="block truncate text-[11px] text-[#728895]">{customer.patientNumber ? `Pat.-Nr. ${customer.patientNumber} · ` : ""}{customer.email || "Keine E-Mail"}</span></span>
+                {draft.customerId === customer.id && <Check className="ml-auto h-4 w-4 shrink-0 text-[#2f795a]" />}
+              </button>
+            )) : <div className="px-4 py-10 text-center text-[12px] text-[#718895]">Keine passende Patient:in gefunden.</div>}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }

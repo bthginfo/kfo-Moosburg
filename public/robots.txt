@@ -3,7 +3,8 @@ Allow: /
 
 # Seiten die nicht indexiert werden sollen
 Disallow: /admin
+Disallow: /verwaltung
 Disallow: /api/
 
 # Sitemap
-Sitemap: https://kfo-moosburg.de/sitemap.xml
+Sitemap: https://www.kfo-moosburg.de/sitemap.xml

@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import {
   BellRing,
@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { BrandMark } from "./AdminLogin";
 import { adminApi } from "./api";
+import { toast } from "sonner";
+import { useAccessibleModal } from "../lib/useAccessibleModal";
 
 const navigation = [
   { to: "/verwaltung", label: "Übersicht", mobileLabel: "Übersicht", icon: LayoutDashboard, exact: true },
@@ -37,20 +39,32 @@ type Props = {
 export function AdminShell({ children, title, eyebrow, description, action, onLoggedOut }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const menuDialogRef = useRef<HTMLDivElement>(null);
+  const menuCloseRef = useRef<HTMLButtonElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
 
-  useEffect(() => setMenuOpen(false), [location.pathname]);
-  useEffect(() => {
-    document.body.style.overflow = menuOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
-  }, [menuOpen]);
+  useEffect(() => closeMenu(), [closeMenu, location.pathname]);
+  useAccessibleModal({
+    open: menuOpen,
+    containerRef: menuDialogRef,
+    initialFocusRef: menuCloseRef,
+    returnFocusRef: menuButtonRef,
+    onClose: closeMenu,
+  });
 
   async function logout() {
     setLoggingOut(true);
-    try { await adminApi.logout(); } catch { /* session is still cleared in the UI */ }
-    onLoggedOut();
-    navigate("/verwaltung", { replace: true });
+    try {
+      await adminApi.logout();
+      onLoggedOut();
+      navigate("/verwaltung", { replace: true });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Abmelden fehlgeschlagen. Bitte versuchen Sie es erneut.");
+      setLoggingOut(false);
+    }
   }
 
   const navItems = (
@@ -99,7 +113,7 @@ export function AdminShell({ children, title, eyebrow, description, action, onLo
       <div className="lg:pl-[244px]">
         <header className="sticky top-0 z-20 flex h-[68px] items-center justify-between border-b border-[#d2e1eb] bg-[#edf7ff]/95 px-4 backdrop-blur-sm sm:px-6 lg:hidden">
           <BrandMark />
-          <button onClick={() => setMenuOpen(true)} className="admin-icon-button" aria-label="Menü öffnen"><Menu className="h-5 w-5" /></button>
+          <button ref={menuButtonRef} type="button" onClick={() => setMenuOpen(true)} className="admin-icon-button" aria-label="Menü öffnen" aria-expanded={menuOpen} aria-controls="admin-mobile-navigation"><Menu className="h-5 w-5" /></button>
         </header>
 
         <div className="mx-auto max-w-[1510px] px-4 pb-24 pt-6 sm:px-7 sm:pt-8 lg:px-9 lg:pb-12 lg:pt-9 xl:px-12">
@@ -116,16 +130,16 @@ export function AdminShell({ children, title, eyebrow, description, action, onLo
       </div>
 
       {menuOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
-          <button className="absolute inset-0 bg-[#031d31]/55" onClick={() => setMenuOpen(false)} aria-label="Menü schließen" />
+        <div ref={menuDialogRef} id="admin-mobile-navigation" className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Verwaltungsnavigation" tabIndex={-1}>
+          <div className="absolute inset-0 bg-[#031d31]/55" aria-hidden="true" onMouseDown={closeMenu} />
           <aside className="admin-enter absolute inset-y-0 right-0 flex w-[min(88vw,350px)] flex-col bg-[#063255] px-5 py-5 shadow-2xl">
             <div className="flex items-center justify-between">
               <BrandMark light />
-              <button onClick={() => setMenuOpen(false)} className="flex h-10 w-10 items-center justify-center rounded-[11px] text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f58a07]" aria-label="Menü schließen"><X className="h-5 w-5" /></button>
+              <button ref={menuCloseRef} type="button" onClick={closeMenu} className="flex h-10 w-10 items-center justify-center rounded-[11px] text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f58a07]" aria-label="Menü schließen"><X className="h-5 w-5" /></button>
             </div>
             {navItems}
             <div className="mt-auto border-t border-white/10 pt-5">
-              <button onClick={logout} className="flex min-h-11 w-full items-center gap-3 rounded-[11px] px-3 text-[14px] text-[#cfe0eb] hover:bg-white/8 hover:text-white"><LogOut className="h-[18px] w-[18px]" />Abmelden</button>
+              <button type="button" onClick={logout} disabled={loggingOut} className="flex min-h-11 w-full items-center gap-3 rounded-[11px] px-3 text-[14px] text-[#cfe0eb] hover:bg-white/8 hover:text-white disabled:opacity-60">{loggingOut ? <span className="admin-spinner h-4 w-4" /> : <LogOut className="h-[18px] w-[18px]" />}Abmelden</button>
             </div>
           </aside>
         </div>

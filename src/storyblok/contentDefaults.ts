@@ -76,8 +76,11 @@ export const DEFAULTS = {
   // ─── TEAM ────────────────────────────────────────────────────────────
   team_title: "Unser Praxisteam",
   team_subtitle: "Bei uns sind Sie in guten und professionellen Händen",
-  team_1_name: "Dr. Christoph Amann", team_1_role: "Fachzahnarzt für Kieferorthopädie", team_1_image: IMAGES.drAmann,
-  team_2_name: "Dr. Julian Burg", team_2_role: "M.Sc. Kieferorthopädie", team_2_image: IMAGES.drBurg,
+  // Personenbezogene Porträts werden ausschließlich über verifizierte
+  // Storyblok-Assets angezeigt. Die Defaults dürfen keine Stock-Fotos als
+  // Abbildungen der namentlich genannten Behandler ausgeben.
+  team_1_name: "Dr. Christoph Amann", team_1_role: "Fachzahnarzt für Kieferorthopädie", team_1_image: "",
+  team_2_name: "Dr. Julian Burg", team_2_role: "M.Sc. Kieferorthopädie", team_2_image: "",
 
   // ─── ANAMNESE ────────────────────────────────────────────────────────
   anamnese_title: "Unser Anamnesebogen",
@@ -134,11 +137,4 @@ export const DEFAULTS = {
   popup_cta_is_drflex: true,
   popup_delay: 5,
   popup_once_per_session: true,
-
-  // ─── COOKIE ──────────────────────────────────────────────────────────
-  cookie_title: "Cookie-Einstellungen",
-  cookie_text: "Wir verwenden Cookies, um Ihnen die bestmögliche Erfahrung auf unserer Website zu bieten. Einige Cookies sind notwendig, andere helfen uns, unsere Website und Ihr Erlebnis zu verbessern.",
-  cookie_accept_all: "Alle akzeptieren",
-  cookie_accept_selected: "Auswahl bestätigen",
-  cookie_reject_all: "Nur notwendige",
 } as const;

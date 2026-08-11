@@ -15,9 +15,9 @@ export function RetainerSection() {
                 <div className="w-12 h-12 rounded-full bg-[#f58a07]/10 flex items-center justify-center shrink-0 mt-1">
                   <ShieldCheck className="w-6 h-6 text-[#f58a07]" />
                 </div>
-                <h3 className="text-2xl md:text-[2.25rem] leading-tight">
+                <h2 className="text-2xl md:text-[2.25rem] leading-tight">
                   {c.retainer_title}
-                </h3>
+                </h2>
               </div>
             </ScrollReveal>
             <ScrollReveal direction="right" delay={150}>

@@ -2,6 +2,7 @@ import { ScrollReveal } from "./ScrollReveal";
 import { motion } from "motion/react";
 import { useHomeContent } from "./hooks/useHomeContent";
 import { getLucideIcon } from "./hooks/useLucideIcon";
+import { BoldText } from "../lib/safeContent";
 
 export function FeaturesSection() {
   const c = useHomeContent();
@@ -19,15 +20,12 @@ export function FeaturesSection() {
             {/* Header */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12">
               <ScrollReveal direction="left">
-                <h3 className="text-2xl md:text-[2.25rem] leading-tight">
+                <h2 className="text-2xl md:text-[2.25rem] leading-tight">
                   {c.features_title}
-                </h3>
+                </h2>
               </ScrollReveal>
               <ScrollReveal direction="right" delay={150}>
-                <p dangerouslySetInnerHTML={{
-                  __html: (c.features_description || "")
-                    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-[#0d1317]">$1</strong>')
-                }} />
+                <BoldText text={c.features_description || ""} />
               </ScrollReveal>
             </div>
 
@@ -52,9 +50,9 @@ export function FeaturesSection() {
                       >
                         <Icon className="w-6 h-6 text-[#f58a07]" strokeWidth={1.5} />
                       </motion.div>
-                      <h4 className="text-center whitespace-pre-line text-sm md:text-base">
+                      <h3 className="text-center whitespace-pre-line text-sm md:text-base">
                         {feature.title}
-                      </h4>
+                      </h3>
                     </motion.div>
                   </ScrollReveal>
                 );

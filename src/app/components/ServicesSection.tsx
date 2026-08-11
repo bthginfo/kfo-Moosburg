@@ -2,6 +2,7 @@ import { ScrollReveal } from "./ScrollReveal";
 import { motion } from "motion/react";
 import { useHomeContent } from "./hooks/useHomeContent";
 import { openBooking } from "../../config/booking";
+import { IMAGE_FALLBACK } from "./images";
 
 interface ServiceItem {
   title: string;
@@ -30,7 +31,7 @@ function ServiceBlock({ service, index }: { service: ServiceItem; index: number 
                 whileHover={{ scale: 1.04 }}
                 transition={{ duration: 0.5 }}
                 src={service.image}
-                alt={service.alt}
+                alt={service.image === IMAGE_FALLBACK ? "" : service.alt}
                 className="w-full object-cover max-h-[24rem] md:max-h-[32rem]"
                 loading="lazy"
               />
@@ -65,7 +66,7 @@ function ServiceBlock({ service, index }: { service: ServiceItem; index: number 
                 {service.highlight}
               </motion.span>
             )}
-            <h2 className="text-2xl md:text-[3rem] leading-tight">{service.title}</h2>
+            <h3 className="text-2xl md:text-[3rem] leading-tight">{service.title}</h3>
             <div className="h-4" />
             <p>{service.description}</p>
             <div className="h-6" />

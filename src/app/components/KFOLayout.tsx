@@ -1,26 +1,26 @@
-import { Outlet } from "react-router";
+import { Outlet, useLocation } from "react-router";
 import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
 import { StickyMobileCTA } from "./StickyMobileCTA";
 import { WhatsAppButton } from "./WhatsAppButton";
 import { BackToTop } from "./BackToTop";
-import { CookieBanner } from "./CookieBanner";
 import { StoryblokPopup } from "./StoryblokPopup";
 
-// Storyblok initialisieren (importiert die Config, die storyblokInit ausfuehrt)
+// Storyblok-Konfiguration für die veröffentlichte CDN-API laden.
 import "../../storyblok/storyblokConfig";
 
 export function KFOLayout() {
+  const isHomePage = useLocation().pathname === "/";
+
   return (
     <div className="min-h-screen overflow-x-hidden">
       <Navbar />
       <Outlet />
       <Footer />
-      <StickyMobileCTA />
-      <WhatsAppButton />
+      {isHomePage && <StickyMobileCTA />}
+      {isHomePage && <WhatsAppButton />}
       <BackToTop />
-      <CookieBanner />
-      <StoryblokPopup />
+      {isHomePage && <StoryblokPopup />}
     </div>
   );
 }

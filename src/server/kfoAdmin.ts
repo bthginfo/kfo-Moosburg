@@ -1,5 +1,5 @@
 import { createCipheriv, createDecipheriv, createHmac, createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+import type { VercelRequest, VercelResponse } from "./vercelTypes.js";
 import { neon } from "@neondatabase/serverless";
 import nodemailer from "nodemailer";
 
@@ -59,7 +59,7 @@ export interface SmtpSettings {
   id: "smtp";
   host: string;
   port: number;
-  security: "ssl" | "starttls" | "none";
+  security: "ssl" | "starttls";
   username: string;
   encryptedPassword: string;
   fromName: string;
@@ -76,7 +76,7 @@ export interface DeliveryLog {
   customerId: string;
   recipient: string;
   scheduledDate: string;
-  status: "processing" | "sent" | "failed";
+  status: "processing" | "sent" | "failed" | "uncertain";
   sentAt: string;
   error: string;
   updatedAt: string;
@@ -101,33 +101,50 @@ interface StoreEvent {
   updatedAt: string;
 }
 
+class StaleVersionError extends Error {
+  code = "stale_version";
+
+  constructor(message: string) {
+    super(message);
+    this.name = "StaleVersionError";
+  }
+}
+
 function env(name: string): string {
   return (process.env[name] || "").trim();
 }
 
 function sessionSecret(): string {
-  return env("ADMIN_SESSION_SECRET") || env("ADMIN_PASSWORD");
+  return env("ADMIN_SESSION_SECRET");
 }
 
 function safeEqual(left: string, right: string): boolean {
-  const a = Buffer.from(left);
-  const b = Buffer.from(right);
-  return a.length === b.length && timingSafeEqual(a, b);
+  const a = createHash("sha256").update(left).digest();
+  const b = createHash("sha256").update(right).digest();
+  return timingSafeEqual(a, b);
 }
 
 function parseCookies(req: VercelRequest): Record<string, string> {
-  const raw = req.headers.cookie || "";
+  const cookieHeader = req.headers.cookie;
+  const raw = Array.isArray(cookieHeader) ? cookieHeader[0] || "" : cookieHeader || "";
   return raw.split(";").reduce<Record<string, string>>((cookies, part) => {
     const separator = part.indexOf("=");
     if (separator < 0) return cookies;
     const key = part.slice(0, separator).trim();
     const value = part.slice(separator + 1).trim();
-    if (key) cookies[key] = decodeURIComponent(value);
+    if (key) {
+      try {
+        cookies[key] = decodeURIComponent(value);
+      } catch {
+        // Ignore malformed cookie values instead of turning them into a 500 response.
+      }
+    }
     return cookies;
   }, {});
 }
 
 function signSession(expiresAt: number): string {
+  if (!sessionSecret()) throw new Error("ADMIN_SESSION_SECRET fehlt.");
   const payload = Buffer.from(JSON.stringify({ role: "admin", exp: expiresAt })).toString("base64url");
   const signature = createHmac("sha256", sessionSecret()).update(payload).digest("base64url");
   return `${payload}.${signature}`;
@@ -162,7 +179,7 @@ export function createAdminSession(res: VercelResponse): void {
   const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
   res.setHeader(
     "Set-Cookie",
-    `${SESSION_COOKIE}=${encodeURIComponent(signSession(expiresAt))}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${SESSION_TTL_SECONDS}${secure}`,
+    `${SESSION_COOKIE}=${encodeURIComponent(signSession(expiresAt))}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${SESSION_TTL_SECONDS}; Priority=High${secure}`,
   );
 }
 
@@ -180,20 +197,31 @@ export function setPrivateResponse(res: VercelResponse): void {
   res.setHeader("Cache-Control", "private, no-store, max-age=0");
   res.setHeader("Pragma", "no-cache");
   res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "no-referrer");
 }
 
 export function ensureWriteOrigin(req: VercelRequest, res: VercelResponse): boolean {
   if (["GET", "HEAD", "OPTIONS"].includes(req.method || "")) return true;
-  const origin = req.headers.origin;
-  const host = req.headers.host;
-  if (!origin || !host) return true;
+  const origin = Array.isArray(req.headers.origin) ? req.headers.origin[0] : req.headers.origin;
+  const forwardedHost = Array.isArray(req.headers["x-forwarded-host"])
+    ? req.headers["x-forwarded-host"][0]
+    : req.headers["x-forwarded-host"];
+  const host = String(forwardedHost || req.headers.host || "").split(",")[0].trim();
+  const fetchSite = String(req.headers["sec-fetch-site"] || "").toLowerCase();
+  const reject = () => {
+    res.status(403).json({ error: "invalid_origin", message: "Die Anfrage wurde aus Sicherheitsgründen abgelehnt." });
+    return false;
+  };
+  if (fetchSite && !["same-origin", "none"].includes(fetchSite)) return reject();
+  if (!origin || !host) return process.env.NODE_ENV === "production" ? reject() : true;
   try {
-    if (new URL(origin).host === host) return true;
+    const parsed = new URL(origin);
+    if (parsed.host === host && (process.env.NODE_ENV !== "production" || parsed.protocol === "https:")) return true;
   } catch {
     // handled below
   }
-  res.status(403).json({ error: "invalid_origin", message: "Die Anfrage wurde aus Sicherheitsgründen abgelehnt." });
-  return false;
+  return reject();
 }
 
 function databaseUrl(): string {
@@ -208,6 +236,15 @@ function database() {
 
 export function hasStoreConfiguration(): boolean {
   return Boolean(databaseUrl());
+}
+
+export function missingAdminConfiguration(): string[] {
+  const missing: string[] = [];
+  if (!env("ADMIN_PASSWORD")) missing.push("ADMIN_PASSWORD");
+  if (!sessionSecret()) missing.push("ADMIN_SESSION_SECRET");
+  if (!env("ADMIN_ENCRYPTION_KEY")) missing.push("ADMIN_ENCRYPTION_KEY");
+  if (!databaseUrl()) missing.push("DATABASE_URL oder moosburg_DATABASE_URL");
+  return missing;
 }
 
 let schemaReady: Promise<void> | null = null;
@@ -245,7 +282,7 @@ async function ensureSchema(): Promise<void> {
         appointment_time TEXT NOT NULL DEFAULT '',
         appointment_type TEXT NOT NULL DEFAULT '',
         notes TEXT NOT NULL DEFAULT '',
-        status TEXT NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'completed', 'cancelled')),
+        status TEXT NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'confirmed', 'arrived', 'completed', 'cancelled', 'no_show')),
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )`,
@@ -269,7 +306,7 @@ async function ensureSchema(): Promise<void> {
         id TEXT PRIMARY KEY CHECK (id = 'smtp'),
         host TEXT NOT NULL DEFAULT '',
         port INTEGER NOT NULL DEFAULT 587 CHECK (port BETWEEN 1 AND 65535),
-        security TEXT NOT NULL DEFAULT 'starttls' CHECK (security IN ('ssl', 'starttls', 'none')),
+        security TEXT NOT NULL DEFAULT 'starttls' CHECK (security IN ('ssl', 'starttls')),
         username TEXT NOT NULL DEFAULT '',
         encrypted_password TEXT NOT NULL DEFAULT '',
         from_name TEXT NOT NULL DEFAULT '',
@@ -285,15 +322,65 @@ async function ensureSchema(): Promise<void> {
         customer_id TEXT REFERENCES kfo_customers(id) ON DELETE SET NULL,
         recipient TEXT NOT NULL,
         scheduled_date DATE NOT NULL,
-        status TEXT NOT NULL CHECK (status IN ('processing', 'sent', 'failed')),
+        status TEXT NOT NULL CHECK (status IN ('processing', 'sent', 'failed', 'uncertain')),
         sent_at TIMESTAMPTZ,
         error TEXT NOT NULL DEFAULT '',
+        claim_token TEXT NOT NULL DEFAULT '',
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )`,
+      sql`CREATE TABLE IF NOT EXISTS kfo_admin_login_attempts (
+        key_hash TEXT PRIMARY KEY,
+        attempts INTEGER NOT NULL DEFAULT 0,
+        reset_at TIMESTAMPTZ NOT NULL
+      )`,
+      sql`ALTER TABLE kfo_reminder_deliveries ADD COLUMN IF NOT EXISTS claim_token TEXT NOT NULL DEFAULT ''`,
+      sql`DO $$ BEGIN
+        IF EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conrelid = 'kfo_reminder_deliveries'::regclass
+            AND conname = 'kfo_reminder_deliveries_status_check'
+            AND POSITION('uncertain' IN pg_get_constraintdef(oid)) = 0
+        ) THEN
+          ALTER TABLE kfo_reminder_deliveries DROP CONSTRAINT kfo_reminder_deliveries_status_check;
+          ALTER TABLE kfo_reminder_deliveries ADD CONSTRAINT kfo_reminder_deliveries_status_check
+            CHECK (status IN ('processing', 'sent', 'failed', 'uncertain'));
+        ELSIF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conrelid = 'kfo_reminder_deliveries'::regclass
+            AND conname = 'kfo_reminder_deliveries_status_check'
+        ) THEN
+          ALTER TABLE kfo_reminder_deliveries ADD CONSTRAINT kfo_reminder_deliveries_status_check
+            CHECK (status IN ('processing', 'sent', 'failed', 'uncertain'));
+        END IF;
+      END $$`,
+      sql`DO $$ BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conname = 'kfo_appointments_status_check'
+            AND pg_get_constraintdef(oid) LIKE '%no_show%'
+        ) THEN
+          ALTER TABLE kfo_appointments DROP CONSTRAINT IF EXISTS kfo_appointments_status_check;
+          ALTER TABLE kfo_appointments ADD CONSTRAINT kfo_appointments_status_check
+            CHECK (status IN ('scheduled', 'confirmed', 'arrived', 'completed', 'cancelled', 'no_show'));
+        END IF;
+      END $$`,
+      sql`DO $$ BEGIN
+        IF EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conname = 'kfo_smtp_settings_security_check'
+            AND pg_get_constraintdef(oid) LIKE '%none%'
+        ) THEN
+          UPDATE kfo_smtp_settings SET security = 'starttls' WHERE security = 'none';
+          ALTER TABLE kfo_smtp_settings DROP CONSTRAINT kfo_smtp_settings_security_check;
+          ALTER TABLE kfo_smtp_settings ADD CONSTRAINT kfo_smtp_settings_security_check
+            CHECK (security IN ('ssl', 'starttls'));
+        END IF;
+      END $$`,
       sql`CREATE INDEX IF NOT EXISTS kfo_customers_name_idx ON kfo_customers (last_name, first_name)`,
       sql`CREATE UNIQUE INDEX IF NOT EXISTS kfo_customers_patient_number_idx ON kfo_customers (patient_number) WHERE patient_number <> ''`,
       sql`CREATE INDEX IF NOT EXISTS kfo_appointments_date_idx ON kfo_appointments (appointment_date, status)`,
       sql`CREATE INDEX IF NOT EXISTS kfo_reminder_deliveries_date_idx ON kfo_reminder_deliveries (scheduled_date, status)`,
+      sql`CREATE INDEX IF NOT EXISTS kfo_admin_login_attempts_reset_idx ON kfo_admin_login_attempts (reset_at)`,
     ]);
   })().catch((error) => {
     schemaReady = null;
@@ -333,7 +420,7 @@ export async function loadStore(): Promise<StoreSnapshot> {
       COALESCE(customer_id, '') AS "customerId", recipient, scheduled_date::text AS "scheduledDate",
       status, sent_at AS "sentAt", error, updated_at AS "updatedAt"
       FROM kfo_reminder_deliveries`,
-  ], { readOnly: true });
+  ], { readOnly: true, isolationLevel: "RepeatableRead" });
   const snapshot = emptySnapshot();
   snapshot.customers = (customerRows as any[]).map((row) => ({ ...row, birthDate: row.birthDate || "", createdAt: timestamp(row.createdAt), updatedAt: timestamp(row.updatedAt) } as Customer));
   snapshot.appointments = (appointmentRows as any[]).map((row) => ({ ...row, createdAt: timestamp(row.createdAt), updatedAt: timestamp(row.updatedAt) } as Appointment));
@@ -341,6 +428,197 @@ export async function loadStore(): Promise<StoreSnapshot> {
   snapshot.settings = (settingsRows as any[]).map((row) => ({ ...row, port: Number(row.port), updatedAt: timestamp(row.updatedAt) } as SmtpSettings));
   snapshot.deliveries = (deliveryRows as any[]).map((row) => ({ ...row, sentAt: row.sentAt ? timestamp(row.sentAt) : "", updatedAt: timestamp(row.updatedAt) } as DeliveryLog));
   return snapshot;
+}
+
+function loginAttemptKey(req: VercelRequest): string {
+  const forwarded = Array.isArray(req.headers["x-forwarded-for"])
+    ? req.headers["x-forwarded-for"][0]
+    : req.headers["x-forwarded-for"];
+  const ip = String(forwarded || req.socket.remoteAddress || "unknown").split(",")[0].trim();
+  return createHash("sha256").update(`kfo-admin-login:${ip}`).digest("hex");
+}
+
+export async function consumeLoginAttempt(req: VercelRequest): Promise<{ limited: boolean; retryAfter: number }> {
+  await ensureSchema();
+  const sql = database();
+  const key = loginAttemptKey(req);
+  await sql`DELETE FROM kfo_admin_login_attempts WHERE reset_at <= NOW()`;
+  const rows = await sql`INSERT INTO kfo_admin_login_attempts (key_hash, attempts, reset_at)
+    VALUES (${key}, 1, NOW() + INTERVAL '15 minutes')
+    ON CONFLICT (key_hash) DO UPDATE SET
+      attempts = CASE WHEN kfo_admin_login_attempts.reset_at <= NOW() THEN 1 ELSE kfo_admin_login_attempts.attempts + 1 END,
+      reset_at = CASE WHEN kfo_admin_login_attempts.reset_at <= NOW() THEN NOW() + INTERVAL '15 minutes' ELSE kfo_admin_login_attempts.reset_at END
+    RETURNING attempts, reset_at AS "resetAt"`;
+  const row = (rows as any[])[0];
+  if (!row || Number(row.attempts) <= 10) return { limited: false, retryAfter: 0 };
+  const retryAfter = Math.max(1, Math.ceil((new Date(row.resetAt).getTime() - Date.now()) / 1000));
+  return { limited: true, retryAfter };
+}
+
+export async function clearLoginFailures(req: VercelRequest): Promise<void> {
+  await ensureSchema();
+  const sql = database();
+  const key = loginAttemptKey(req);
+  await sql`DELETE FROM kfo_admin_login_attempts WHERE key_hash = ${key}`;
+}
+
+export async function claimReminderDelivery(item: DeliveryLog): Promise<string | null> {
+  await ensureSchema();
+  const sql = database();
+  const claimToken = randomUUID();
+  const rows = await sql`INSERT INTO kfo_reminder_deliveries (
+      id, reminder_id, appointment_id, customer_id, recipient, scheduled_date, status, sent_at, error, claim_token, updated_at
+    ) SELECT ${item.id}, r.id, a.id, c.id, ${item.recipient}, ${item.scheduledDate}, 'processing', NULL, '', ${claimToken}, NOW()
+      FROM kfo_reminder_rules r
+      JOIN kfo_appointments a ON a.id = ${item.appointmentId}
+      JOIN kfo_customers c ON c.id = ${item.customerId} AND c.id = a.customer_id
+      WHERE r.id = ${item.reminderId}
+    ON CONFLICT (id) DO UPDATE SET
+      reminder_id = EXCLUDED.reminder_id, appointment_id = EXCLUDED.appointment_id,
+      customer_id = EXCLUDED.customer_id, recipient = EXCLUDED.recipient,
+      scheduled_date = EXCLUDED.scheduled_date, status = 'processing', sent_at = NULL,
+      error = '', claim_token = EXCLUDED.claim_token, updated_at = NOW()
+    WHERE kfo_reminder_deliveries.status = 'failed'
+    RETURNING id`;
+  return (rows as any[]).length ? claimToken : null;
+}
+
+export async function quarantineStaleReminderDeliveries(staleAfterMinutes = 30): Promise<number> {
+  await ensureSchema();
+  const sql = database();
+  const minutes = Math.max(5, Math.min(24 * 60, Math.trunc(staleAfterMinutes) || 30));
+  const cutoff = new Date(Date.now() - minutes * 60_000).toISOString();
+  const rows = await sql`UPDATE kfo_reminder_deliveries SET
+      status = 'uncertain', claim_token = '',
+      error = 'Versandstatus unklar: Ein früherer Lauf wurde nicht sicher abgeschlossen. Kein automatischer Wiederholungsversand; bitte manuell prüfen.',
+      updated_at = NOW()
+    WHERE status = 'processing' AND updated_at < ${cutoff}
+    RETURNING id`;
+  return (rows as any[]).length;
+}
+
+export interface RevalidatedReminderDelivery {
+  deliveryId: string;
+  claimToken: string;
+  rule: ReminderRule;
+  appointment: Appointment;
+  customer: Customer;
+}
+
+export async function revalidateClaimedReminderDelivery(
+  id: string,
+  claimToken: string,
+  today: string,
+  graceDays: number,
+): Promise<RevalidatedReminderDelivery | null> {
+  await ensureSchema();
+  const sql = database();
+  const grace = Math.max(0, Math.min(30, Math.trunc(graceDays) || 0));
+  const rows = await sql`WITH eligible AS (
+      SELECT
+        d.id AS "deliveryId", d.claim_token AS "claimToken",
+        r.id AS "ruleId", r.name AS "ruleName", r.subject AS "ruleSubject", r.body AS "ruleBody",
+        r.offset_days AS "ruleOffsetDays", r.audience AS "ruleAudience", r.enabled AS "ruleEnabled",
+        r.created_at AS "ruleCreatedAt", r.updated_at AS "ruleUpdatedAt",
+        ARRAY(SELECT t.customer_id FROM kfo_reminder_targets t WHERE t.reminder_id = r.id ORDER BY t.customer_id) AS "ruleCustomerIds",
+        a.id AS "appointmentId", a.customer_id AS "appointmentCustomerId",
+        a.appointment_date::text AS "appointmentDate", a.appointment_time AS "appointmentTime",
+        a.appointment_type AS "appointmentType", a.notes AS "appointmentNotes", a.status AS "appointmentStatus",
+        a.created_at AS "appointmentCreatedAt", a.updated_at AS "appointmentUpdatedAt",
+        c.id AS "customerId", c.salutation AS "customerSalutation", c.first_name AS "customerFirstName",
+        c.last_name AS "customerLastName", c.birth_date::text AS "customerBirthDate",
+        LOWER(BTRIM(c.email)) AS "customerEmail", c.phone AS "customerPhone", c.mobile AS "customerMobile",
+        c.street AS "customerStreet", c.postal_code AS "customerPostalCode", c.city AS "customerCity",
+        c.insurance_type AS "customerInsuranceType", c.insurer AS "customerInsurer",
+        c.patient_number AS "customerPatientNumber", c.status AS "customerStatus", c.notes AS "customerNotes",
+        c.email_consent AS "customerEmailConsent", c.created_at AS "customerCreatedAt", c.updated_at AS "customerUpdatedAt"
+      FROM kfo_reminder_deliveries d
+      JOIN kfo_reminder_rules r ON r.id = d.reminder_id
+      JOIN kfo_appointments a ON a.id = d.appointment_id
+      JOIN kfo_customers c ON c.id = d.customer_id AND c.id = a.customer_id
+      WHERE d.id = ${id} AND d.status = 'processing' AND d.claim_token = ${claimToken}
+        AND r.enabled = TRUE
+        AND a.status IN ('scheduled', 'confirmed')
+        AND c.status = 'active' AND c.email_consent = TRUE AND BTRIM(c.email) <> ''
+        AND (r.audience = 'all' OR EXISTS (
+          SELECT 1 FROM kfo_reminder_targets target
+          WHERE target.reminder_id = r.id AND target.customer_id = c.id
+        ))
+        AND (a.appointment_date + r.offset_days) = d.scheduled_date
+        AND d.scheduled_date <= ${today}::date
+        AND d.scheduled_date + ${grace} >= ${today}::date
+    ), refreshed AS (
+      UPDATE kfo_reminder_deliveries d SET recipient = eligible."customerEmail", updated_at = NOW()
+      FROM eligible
+      WHERE d.id = eligible."deliveryId" AND d.status = 'processing' AND d.claim_token = eligible."claimToken"
+      RETURNING d.id
+    )
+    SELECT eligible.* FROM eligible JOIN refreshed ON refreshed.id = eligible."deliveryId"`;
+  const row = (rows as any[])[0];
+  if (!row) return null;
+  return {
+    deliveryId: String(row.deliveryId),
+    claimToken: String(row.claimToken),
+    rule: {
+      id: String(row.ruleId),
+      name: String(row.ruleName || ""),
+      subject: String(row.ruleSubject || ""),
+      body: String(row.ruleBody || ""),
+      offsetDays: Number(row.ruleOffsetDays),
+      audience: row.ruleAudience === "selected" ? "selected" : "all",
+      customerIds: Array.isArray(row.ruleCustomerIds) ? row.ruleCustomerIds.map(String) : [],
+      enabled: row.ruleEnabled === true,
+      createdAt: timestamp(row.ruleCreatedAt),
+      updatedAt: timestamp(row.ruleUpdatedAt),
+    },
+    appointment: {
+      id: String(row.appointmentId),
+      customerId: String(row.appointmentCustomerId),
+      date: String(row.appointmentDate || ""),
+      time: String(row.appointmentTime || ""),
+      type: String(row.appointmentType || ""),
+      notes: String(row.appointmentNotes || ""),
+      status: row.appointmentStatus,
+      createdAt: timestamp(row.appointmentCreatedAt),
+      updatedAt: timestamp(row.appointmentUpdatedAt),
+    },
+    customer: {
+      id: String(row.customerId),
+      salutation: String(row.customerSalutation || ""),
+      firstName: String(row.customerFirstName || ""),
+      lastName: String(row.customerLastName || ""),
+      birthDate: String(row.customerBirthDate || ""),
+      email: String(row.customerEmail || ""),
+      phone: String(row.customerPhone || ""),
+      mobile: String(row.customerMobile || ""),
+      street: String(row.customerStreet || ""),
+      postalCode: String(row.customerPostalCode || ""),
+      city: String(row.customerCity || ""),
+      insuranceType: String(row.customerInsuranceType || ""),
+      insurer: String(row.customerInsurer || ""),
+      patientNumber: String(row.customerPatientNumber || ""),
+      status: row.customerStatus,
+      notes: String(row.customerNotes || ""),
+      emailConsent: row.customerEmailConsent === true,
+      createdAt: timestamp(row.customerCreatedAt),
+      updatedAt: timestamp(row.customerUpdatedAt),
+    },
+  };
+}
+
+export async function finishReminderDelivery(
+  id: string,
+  claimToken: string,
+  result: { status: "sent" | "failed"; error?: string },
+): Promise<boolean> {
+  await ensureSchema();
+  const sql = database();
+  const rows = await sql`UPDATE kfo_reminder_deliveries SET
+      status = ${result.status}, sent_at = ${result.status === "sent" ? new Date().toISOString() : null},
+      error = ${cleanText(result.error, 500)}, claim_token = '', updated_at = NOW()
+    WHERE id = ${id} AND status = 'processing' AND claim_token = ${claimToken}
+    RETURNING id`;
+  return Boolean((rows as any[]).length);
 }
 
 export async function appendEvents(events: StoreEvent[]): Promise<void> {
@@ -431,6 +709,183 @@ function timestamp(value: unknown): string {
   return Number.isNaN(date.getTime()) ? String(value) : date.toISOString();
 }
 
+function requiredVersion(value: unknown, label: string): string {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new StaleVersionError(`Der Bearbeitungsstand ${label} fehlt. Bitte laden Sie die Seite neu.`);
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    throw new StaleVersionError(`Der Bearbeitungsstand ${label} ist ungültig. Bitte laden Sie die Seite neu.`);
+  }
+  return date.toISOString();
+}
+
+function rethrowVersionGuard(error: unknown, message: string): never {
+  const code = typeof error === "object" && error && "code" in error
+    ? String((error as { code?: unknown }).code || "")
+    : "";
+  if (code === "22012") throw new StaleVersionError(message);
+  throw error;
+}
+
+export async function saveCustomerRecord(
+  item: Customer,
+  options: { create: boolean; expectedUpdatedAt?: unknown },
+): Promise<Customer> {
+  await ensureSchema();
+  const sql = database();
+  if (options.create) {
+    const rows = await sql`INSERT INTO kfo_customers (
+        id, salutation, first_name, last_name, birth_date, email, phone, mobile, street, postal_code, city,
+        insurance_type, insurer, patient_number, status, notes, email_consent, created_at, updated_at
+      ) VALUES (${item.id}, ${item.salutation}, ${item.firstName}, ${item.lastName}, ${item.birthDate || null},
+        ${item.email}, ${item.phone}, ${item.mobile}, ${item.street}, ${item.postalCode}, ${item.city},
+        ${item.insuranceType}, ${item.insurer}, ${item.patientNumber}, ${item.status}, ${item.notes},
+        ${item.emailConsent}, ${item.createdAt}, date_trunc('milliseconds', clock_timestamp()))
+      RETURNING updated_at AS "updatedAt"`;
+    return { ...item, updatedAt: timestamp((rows as any[])[0]?.updatedAt) };
+  }
+
+  const expected = requiredVersion(options.expectedUpdatedAt, "der Patientendaten");
+  const queries: any[] = [
+    sql`SELECT pg_advisory_xact_lock(hashtextextended(${`kfo-customer:${item.id}`}, 0))`,
+    sql`SELECT id FROM kfo_customers WHERE id = ${item.id} FOR UPDATE`,
+    sql`SELECT 1 / CASE WHEN EXISTS (
+      SELECT 1 FROM kfo_customers WHERE id = ${item.id}
+        AND date_trunc('milliseconds', updated_at) = ${expected}::timestamptz
+    ) THEN 1 ELSE 0 END AS version_guard`,
+    sql`UPDATE kfo_customers SET salutation = ${item.salutation}, first_name = ${item.firstName},
+      last_name = ${item.lastName}, birth_date = ${item.birthDate || null}, email = ${item.email},
+      phone = ${item.phone}, mobile = ${item.mobile}, street = ${item.street}, postal_code = ${item.postalCode},
+      city = ${item.city}, insurance_type = ${item.insuranceType}, insurer = ${item.insurer},
+      patient_number = ${item.patientNumber}, status = ${item.status}, notes = ${item.notes},
+      email_consent = ${item.emailConsent},
+      updated_at = GREATEST(date_trunc('milliseconds', clock_timestamp()), updated_at + INTERVAL '1 millisecond')
+      WHERE id = ${item.id} RETURNING updated_at AS "updatedAt"`,
+  ];
+  if (item.status === "archived") {
+    queries.push(
+      sql`UPDATE kfo_appointments SET status = 'cancelled',
+        updated_at = GREATEST(date_trunc('milliseconds', clock_timestamp()), updated_at + INTERVAL '1 millisecond')
+        WHERE customer_id = ${item.id} AND status IN ('scheduled', 'confirmed')`,
+      sql`UPDATE kfo_reminder_rules rule SET
+        updated_at = GREATEST(date_trunc('milliseconds', clock_timestamp()), rule.updated_at + INTERVAL '1 millisecond')
+        WHERE EXISTS (
+          SELECT 1 FROM kfo_reminder_targets target
+          WHERE target.reminder_id = rule.id AND target.customer_id = ${item.id}
+        )`,
+      sql`DELETE FROM kfo_reminder_targets WHERE customer_id = ${item.id}`,
+    );
+  }
+  try {
+    const results = await sql.transaction(queries) as any[][];
+    const row = results[3]?.[0];
+    if (!row) throw new StaleVersionError("Die Patientendaten wurden zwischenzeitlich geändert. Bitte laden Sie die Seite neu.");
+    return { ...item, updatedAt: timestamp(row.updatedAt) };
+  } catch (error) {
+    if (error instanceof StaleVersionError) throw error;
+    rethrowVersionGuard(error, "Die Patientendaten wurden zwischenzeitlich geändert. Bitte laden Sie die Seite neu.");
+  }
+}
+
+export async function saveReminderRecord(
+  item: ReminderRule,
+  options: { create: boolean; expectedUpdatedAt?: unknown },
+): Promise<ReminderRule> {
+  await ensureSchema();
+  const sql = database();
+  const queries: any[] = [sql`SELECT pg_advisory_xact_lock(hashtextextended(${`kfo-reminder:${item.id}`}, 0))`];
+  let writeIndex: number;
+  if (options.create) {
+    writeIndex = queries.length;
+    queries.push(sql`INSERT INTO kfo_reminder_rules (
+        id, name, subject, body, offset_days, audience, enabled, created_at, updated_at
+      ) VALUES (${item.id}, ${item.name}, ${item.subject}, ${item.body}, ${item.offsetDays}, ${item.audience},
+        ${item.enabled}, ${item.createdAt}, date_trunc('milliseconds', clock_timestamp()))
+      RETURNING updated_at AS "updatedAt"`);
+  } else {
+    const expected = requiredVersion(options.expectedUpdatedAt, "der Erinnerung");
+    queries.push(
+      sql`SELECT id FROM kfo_reminder_rules WHERE id = ${item.id} FOR UPDATE`,
+      sql`SELECT 1 / CASE WHEN EXISTS (
+        SELECT 1 FROM kfo_reminder_rules WHERE id = ${item.id}
+          AND date_trunc('milliseconds', updated_at) = ${expected}::timestamptz
+      ) THEN 1 ELSE 0 END AS version_guard`,
+    );
+    writeIndex = queries.length;
+    queries.push(sql`UPDATE kfo_reminder_rules SET name = ${item.name}, subject = ${item.subject},
+      body = ${item.body}, offset_days = ${item.offsetDays}, audience = ${item.audience}, enabled = ${item.enabled},
+      updated_at = GREATEST(date_trunc('milliseconds', clock_timestamp()), updated_at + INTERVAL '1 millisecond')
+      WHERE id = ${item.id} RETURNING updated_at AS "updatedAt"`);
+  }
+  queries.push(sql`DELETE FROM kfo_reminder_targets WHERE reminder_id = ${item.id}`);
+  for (const customerId of item.customerIds) {
+    queries.push(sql`INSERT INTO kfo_reminder_targets (reminder_id, customer_id)
+      VALUES (${item.id}, ${customerId}) ON CONFLICT DO NOTHING`);
+  }
+  try {
+    const results = await sql.transaction(queries) as any[][];
+    const row = results[writeIndex]?.[0];
+    if (!row) throw new StaleVersionError("Die Erinnerung wurde zwischenzeitlich geändert. Bitte laden Sie die Seite neu.");
+    return { ...item, updatedAt: timestamp(row.updatedAt) };
+  } catch (error) {
+    if (error instanceof StaleVersionError) throw error;
+    rethrowVersionGuard(error, "Die Erinnerung wurde zwischenzeitlich geändert. Bitte laden Sie die Seite neu.");
+  }
+}
+
+export async function deleteReminderRecord(idValue: unknown, expectedUpdatedAt: unknown): Promise<void> {
+  await ensureSchema();
+  const sql = database();
+  const id = typeof idValue === "string" ? idValue.trim().slice(0, 100) : "";
+  if (!id) throw new StaleVersionError("Die Erinnerung konnte nicht identifiziert werden. Bitte laden Sie die Seite neu.");
+  const expected = requiredVersion(expectedUpdatedAt, "der Erinnerung");
+  try {
+    const results = await sql.transaction([
+      sql`SELECT pg_advisory_xact_lock(hashtextextended(${`kfo-reminder:${id}`}, 0))`,
+      sql`SELECT id FROM kfo_reminder_rules WHERE id = ${id} FOR UPDATE`,
+      sql`SELECT 1 / CASE WHEN EXISTS (
+        SELECT 1 FROM kfo_reminder_rules WHERE id = ${id}
+          AND date_trunc('milliseconds', updated_at) = ${expected}::timestamptz
+      ) THEN 1 ELSE 0 END AS version_guard`,
+      sql`DELETE FROM kfo_reminder_rules WHERE id = ${id} RETURNING id`,
+    ]) as any[][];
+    if (!results[3]?.length) throw new StaleVersionError("Die Erinnerung wurde zwischenzeitlich geändert. Bitte laden Sie die Seite neu.");
+  } catch (error) {
+    if (error instanceof StaleVersionError) throw error;
+    rethrowVersionGuard(error, "Die Erinnerung wurde zwischenzeitlich geändert. Bitte laden Sie die Seite neu.");
+  }
+}
+
+export async function saveSmtpSettingsRecord(
+  item: SmtpSettings,
+  options: { create: boolean; expectedUpdatedAt?: unknown },
+): Promise<SmtpSettings> {
+  await ensureSchema();
+  const sql = database();
+  const write = options.create
+    ? sql`INSERT INTO kfo_smtp_settings (
+        id, host, port, security, username, encrypted_password, from_name, from_email, reply_to, timezone, updated_at
+      ) VALUES (${item.id}, ${item.host}, ${item.port}, ${item.security}, ${item.username},
+        ${item.encryptedPassword}, ${item.fromName}, ${item.fromEmail}, ${item.replyTo}, ${item.timezone},
+        date_trunc('milliseconds', clock_timestamp()))
+      ON CONFLICT (id) DO NOTHING RETURNING updated_at AS "updatedAt"`
+    : sql`UPDATE kfo_smtp_settings SET host = ${item.host}, port = ${item.port}, security = ${item.security},
+        username = ${item.username}, encrypted_password = ${item.encryptedPassword}, from_name = ${item.fromName},
+        from_email = ${item.fromEmail}, reply_to = ${item.replyTo}, timezone = ${item.timezone},
+        updated_at = GREATEST(date_trunc('milliseconds', clock_timestamp()), updated_at + INTERVAL '1 millisecond')
+      WHERE id = ${item.id}
+        AND date_trunc('milliseconds', updated_at) = ${requiredVersion(options.expectedUpdatedAt, "der SMTP-Einstellungen")}::timestamptz
+      RETURNING updated_at AS "updatedAt"`;
+  const results = await sql.transaction([
+    sql`SELECT pg_advisory_xact_lock(hashtextextended('kfo-smtp-settings:smtp', 0))`,
+    write,
+  ]) as any[][];
+  const row = results[1]?.[0];
+  if (!row) throw new StaleVersionError("Die SMTP-Einstellungen wurden zwischenzeitlich geändert. Bitte laden Sie die Seite neu.");
+  return { ...item, updatedAt: timestamp(row.updatedAt) };
+}
+
 export function upsertEvent(collection: Collection, record: RecordValue): StoreEvent {
   return {
     collection,
@@ -451,7 +906,9 @@ function cleanText(value: unknown, max = 500): string {
 
 function isoDate(value: unknown): string {
   const text = cleanText(value, 10);
-  return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : "";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return "";
+  const parsed = new Date(`${text}T12:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === text ? text : "";
 }
 
 function timeValue(value: unknown): string {
@@ -459,11 +916,26 @@ function timeValue(value: unknown): string {
   return /^([01]\d|2[0-3]):[0-5]\d$/.test(text) ? text : "";
 }
 
+export function isValidEmail(value: unknown): boolean {
+  const email = cleanText(value, 254).toLowerCase();
+  return email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) && !/[\r\n]/.test(email);
+}
+
+function timezoneValue(value: unknown, fallback = "Europe/Berlin"): string {
+  const timezone = cleanText(value, 80) || fallback;
+  try {
+    new Intl.DateTimeFormat("de-DE", { timeZone: timezone }).format();
+    return timezone;
+  } catch {
+    return fallback;
+  }
+}
+
 export function normalizeCustomer(input: any, existing?: Customer): Customer {
   const now = new Date().toISOString();
   const status = ["active", "paused", "completed", "archived"].includes(input?.status) ? input.status : "active";
   return {
-    id: existing?.id || cleanText(input?.id, 100) || randomUUID(),
+    id: existing?.id || randomUUID(),
     salutation: cleanText(input?.salutation, 40),
     firstName: cleanText(input?.firstName, 120),
     lastName: cleanText(input?.lastName, 120),
@@ -494,12 +966,12 @@ export function normalizeAppointments(input: any, customerId: string, existing: 
       const old = item?.id ? byId.get(String(item.id)) : undefined;
       const status = ["scheduled", "confirmed", "arrived", "completed", "cancelled", "no_show"].includes(item?.status) ? item.status : "scheduled";
       return {
-        id: old?.id || cleanText(item?.id, 100) || randomUUID(),
+        id: old?.id || randomUUID(),
         customerId,
         date: isoDate(item?.date ?? item?.appointmentDate),
         time: timeValue(item?.time ?? item?.appointmentTime),
         type: cleanText(item?.type ?? item?.appointmentType, 160),
-        notes: cleanText(item?.notes ?? item?.note, 1000),
+        notes: cleanText(item?.note ?? item?.notes, 1000),
         status,
         createdAt: old?.createdAt || now,
         updatedAt: now,
@@ -519,7 +991,7 @@ export function normalizeReminder(input: any, existing?: ReminderRule): Reminder
     ? [...new Set<string>(input.customerIds.map((id: unknown) => cleanText(id, 100)).filter(Boolean))]
     : [];
   return {
-    id: existing?.id || cleanText(input?.id, 100) || randomUUID(),
+    id: existing?.id || randomUUID(),
     name: cleanText(input?.name, 160),
     subject: cleanText(input?.subject, 300),
     body: cleanText(input?.body, 15000),
@@ -533,8 +1005,8 @@ export function normalizeReminder(input: any, existing?: ReminderRule): Reminder
 }
 
 function encryptionKey(): Buffer {
-  const source = env("ADMIN_ENCRYPTION_KEY") || sessionSecret();
-  if (!source) throw new Error("ADMIN_ENCRYPTION_KEY oder ADMIN_SESSION_SECRET fehlt.");
+  const source = env("ADMIN_ENCRYPTION_KEY");
+  if (!source) throw new Error("ADMIN_ENCRYPTION_KEY fehlt.");
   return createHash("sha256").update(source).digest();
 }
 
@@ -558,7 +1030,7 @@ function decryptSecret(value: string): string {
 
 export function normalizeSettings(input: any, existing?: SmtpSettings): SmtpSettings {
   const requestedSecurity = input?.security === "tls" ? "ssl" : input?.security;
-  const security = ["ssl", "starttls", "none"].includes(requestedSecurity) ? requestedSecurity : existing?.security || "starttls";
+  const security: SmtpSettings["security"] = requestedSecurity === "ssl" ? "ssl" : "starttls";
   const password = typeof input?.password === "string" && input.password ? encryptSecret(input.password) : existing?.encryptedPassword || "";
   return {
     id: "smtp",
@@ -570,7 +1042,7 @@ export function normalizeSettings(input: any, existing?: SmtpSettings): SmtpSett
     fromName: cleanText(input?.senderName ?? input?.fromName ?? existing?.fromName, 160) || "Kieferorthopädie Moosburg",
     fromEmail: cleanText(input?.senderEmail ?? input?.fromEmail ?? existing?.fromEmail, 254).toLowerCase(),
     replyTo: cleanText(input?.replyToEmail ?? input?.replyTo ?? existing?.replyTo, 254).toLowerCase(),
-    timezone: cleanText(input?.timezone ?? existing?.timezone, 80) || "Europe/Berlin",
+    timezone: timezoneValue(input?.timezone ?? existing?.timezone),
     updatedAt: new Date().toISOString(),
   };
 }
@@ -586,7 +1058,7 @@ export function publicSettings(settings?: SmtpSettings | null) {
     replyToEmail: settings?.replyTo || "",
     timezone: settings?.timezone || "Europe/Berlin",
     hasPassword: Boolean(settings?.encryptedPassword),
-    configured: Boolean(settings?.host && settings?.username && settings?.encryptedPassword && settings?.fromEmail),
+    configured: Boolean(settings?.host && settings?.username && settings?.encryptedPassword && isValidEmail(settings?.fromEmail)),
     updatedAt: settings?.updatedAt || "",
   };
 }
@@ -601,6 +1073,12 @@ export function buildTransport(settings: SmtpSettings) {
     secure: settings.security === "ssl",
     requireTLS: settings.security === "starttls",
     auth: { user: settings.username, pass: decryptSecret(settings.encryptedPassword) },
+    tls: { minVersion: "TLSv1.2" },
+    connectionTimeout: 15_000,
+    greetingTimeout: 15_000,
+    socketTimeout: 30_000,
+    disableFileAccess: true,
+    disableUrlAccess: true,
   });
 }
 
@@ -623,6 +1101,14 @@ export function isStorageSetupError(error: unknown): boolean {
 export function apiError(res: VercelResponse, error: unknown): void {
   const databaseCode = typeof error === "object" && error && "code" in error ? String((error as { code?: unknown }).code || "") : "";
   console.error("KFO admin API error", { name: error instanceof Error ? error.name : "UnknownError", code: databaseCode || "unknown" });
+  if (databaseCode === "stale_version") {
+    res.status(409).json({
+      error: "stale_version",
+      code: "stale_version",
+      message: error instanceof Error ? error.message : "Der Datensatz wurde zwischenzeitlich geändert. Bitte laden Sie die Seite neu.",
+    });
+    return;
+  }
   if (databaseCode === "23505") {
     res.status(409).json({ error: "duplicate_record", message: "Ein Datensatz mit dieser Patienten- oder Referenznummer existiert bereits." });
     return;

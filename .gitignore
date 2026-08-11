@@ -1,0 +1,13 @@
+node_modules/
+dist/
+dogfood-output/
+.vercel/
+.env
+.env.*
+!.env.example
+*.log
+*.zip
+.DS_Store
+Thumbs.db
+
+.vercel

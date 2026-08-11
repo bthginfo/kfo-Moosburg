@@ -1,23 +1,31 @@
-import { icons } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import {
+  Award,
+  Clock,
+  EyeOff,
+  Handshake,
+  Heart,
+  Shield,
+  Stethoscope,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
+
+const ICONS: Readonly<Record<string, LucideIcon>> = {
+  award: Award,
+  clock: Clock,
+  eyeoff: EyeOff,
+  handshake: Handshake,
+  heart: Heart,
+  shield: Shield,
+  stethoscope: Stethoscope,
+  users: Users,
+};
 
 /**
- * Resolves a Lucide icon by name string.
- * Supports PascalCase ("HeartPulse"), kebab-case ("heart-pulse"), etc.
- * Returns fallback icon if not found.
+ * Löst ausschließlich die in Storyblok vorgesehenen Praxis-Icons auf.
+ * Groß-/Kleinschreibung und Trennzeichen sind dabei unerheblich.
  */
-export function getLucideIcon(name: string, fallback: LucideIcon = icons.Heart): LucideIcon {
-  if (!name) return fallback;
-
-  // Direct match (PascalCase) – most common from Storyblok
-  if (name in icons) return icons[name as keyof typeof icons];
-
-  // Try converting kebab-case or snake_case to PascalCase
-  const pascalName = name
-    .replace(/[-_](.)/g, (_, c) => c.toUpperCase())
-    .replace(/^(.)/, (_, c) => c.toUpperCase());
-
-  if (pascalName in icons) return icons[pascalName as keyof typeof icons];
-
-  return fallback;
+export function getLucideIcon(name: string, fallback: LucideIcon = Heart): LucideIcon {
+  const normalizedName = String(name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  return Object.hasOwn(ICONS, normalizedName) ? ICONS[normalizedName] : fallback;
 }

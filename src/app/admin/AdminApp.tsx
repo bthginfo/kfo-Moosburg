@@ -10,33 +10,50 @@ import { RemindersPage } from "./pages/RemindersPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { SchedulePage } from "./pages/SchedulePage";
 import { EstimatesPage } from "./pages/EstimatesPage";
-import type { Customer, CustomerDraft, ReminderDraft, ReminderRule, SmtpSettings } from "./types";
+import type { Customer, CustomerDraft, ReminderDelivery, ReminderDraft, ReminderRule, SmtpSettings } from "./types";
 import "./admin.css";
 
-type LoadState = "checking" | "signed-out" | "loading" | "ready" | "setup";
+type LoadState = "checking" | "signed-out" | "loading" | "ready" | "setup" | "error";
 
 export function AdminApp() {
   const [state, setState] = useState<LoadState>("checking");
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [reminders, setReminders] = useState<ReminderRule[]>([]);
+  const [deliveries, setDeliveries] = useState<ReminderDelivery[]>([]);
   const [settings, setSettings] = useState<SmtpSettings | null>(null);
+  const [loadError, setLoadError] = useState("");
   const location = useLocation();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    document.title = "Verwaltung | KFO Moosburg";
+    let robots = document.head.querySelector<HTMLMetaElement>('meta[name="robots"]');
+    if (!robots) {
+      robots = document.createElement("meta");
+      robots.name = "robots";
+      document.head.appendChild(robots);
+    }
+    robots.content = "noindex, nofollow, noarchive";
+    document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.remove();
+    document.head.querySelector<HTMLMetaElement>('meta[property="og:url"]')?.remove();
+  }, []);
+
   const loadData = useCallback(async () => {
     setState("loading");
-    const results = await Promise.allSettled([adminApi.customers(), adminApi.reminders(), adminApi.settings()]);
-    const rejected = results.find((result) => result.status === "rejected") as PromiseRejectedResult | undefined;
-    if (rejected) {
-      const error = rejected.reason;
+    setLoadError("");
+    try {
+      const [customerResponse, reminderResponse, smtpSettings] = await Promise.all([adminApi.customers(), adminApi.reminders(), adminApi.settings()]);
+      setCustomers(customerResponse.customers ?? []);
+      setReminders(reminderResponse.reminders ?? []);
+      setDeliveries(reminderResponse.recentDeliveries ?? []);
+      setSettings(smtpSettings);
+      setState("ready");
+    } catch (error) {
       if (error instanceof AdminApiError && error.status === 401) return setState("signed-out");
       if (error instanceof AdminApiError && (error.status === 503 || error.code === "setup_required")) return setState("setup");
-      toast.error(error instanceof Error ? error.message : "Praxisdaten konnten nicht geladen werden.");
+      setLoadError(error instanceof Error ? error.message : "Praxisdaten konnten nicht geladen werden.");
+      setState("error");
     }
-    if (results[0].status === "fulfilled") setCustomers(results[0].value.customers ?? []);
-    if (results[1].status === "fulfilled") setReminders(results[1].value.reminders ?? []);
-    if (results[2].status === "fulfilled") setSettings(results[2].value);
-    setState("ready");
   }, []);
 
   useEffect(() => {
@@ -48,11 +65,24 @@ export function AdminApp() {
       else setState("signed-out");
     }).catch((error) => {
       if (!mounted) return;
-      if (error instanceof AdminApiError && (error.status === 503 || error.status === 404 || error.code === "setup_required" || error.code === "NETWORK")) setState("setup");
-      else setState("signed-out");
+      if (error instanceof AdminApiError && (error.status === 503 || error.code === "setup_required")) setState("setup");
+      else { setLoadError(error instanceof Error ? error.message : "Die Verwaltung ist vorübergehend nicht erreichbar."); setState("error"); }
     });
     return () => { mounted = false; };
   }, [loadData]);
+
+  useEffect(() => {
+    const sessionExpired = () => {
+      setCustomers([]);
+      setReminders([]);
+      setDeliveries([]);
+      setSettings(null);
+      setState("signed-out");
+      toast.error("Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.");
+    };
+    window.addEventListener("kfo:admin-session-expired", sessionExpired);
+    return () => window.removeEventListener("kfo:admin-session-expired", sessionExpired);
+  }, []);
 
   async function saveCustomer(draft: CustomerDraft) {
     const response = await adminApi.saveCustomer(draft);
@@ -77,10 +107,11 @@ export function AdminApp() {
   if (state === "setup") {
     return <><AdminLogin onAuthenticated={loadData} setupUnavailable /><AdminToaster /></>;
   }
+  if (state === "error") return <><ErrorScreen message={loadError} onRetry={() => window.location.reload()} /><AdminToaster /></>;
 
-  const logout = () => { setCustomers([]); setReminders([]); setSettings(null); setState("signed-out"); };
+  const logout = () => { setCustomers([]); setReminders([]); setDeliveries([]); setSettings(null); setState("signed-out"); };
   let page: React.ReactNode;
-  if (location.pathname === "/verwaltung" || location.pathname === "/verwaltung/") page = <DashboardPage customers={customers} reminders={reminders} onLoggedOut={logout} onAddCustomer={() => navigate("/verwaltung/kunden?neu=1")} />;
+  if (location.pathname === "/verwaltung" || location.pathname === "/verwaltung/") page = <DashboardPage customers={customers} reminders={reminders} deliveries={deliveries} smtpConfigured={Boolean(settings?.configured)} onLoggedOut={logout} onAddCustomer={() => navigate("/verwaltung/kunden?neu=1")} />;
   else if (location.pathname.startsWith("/verwaltung/kunden")) page = <CustomersPage customers={customers} onLoggedOut={logout} onSave={saveCustomer} onRefresh={loadData} />;
   else if (location.pathname.startsWith("/verwaltung/termine")) page = <SchedulePage customers={customers} onLoggedOut={logout} />;
   else if (location.pathname.startsWith("/verwaltung/kostenvoranschlaege")) page = <EstimatesPage customers={customers} onLoggedOut={logout} />;
@@ -94,6 +125,10 @@ function LoadingScreen({ label }: { label: string }) {
   return <main className="admin-root flex min-h-screen flex-col items-center justify-center bg-[#edf7ff] px-6 text-center"><BrandMark /><LoaderCircle className="mt-10 h-7 w-7 animate-spin text-[#f58a07]" /><p className="mt-4 !text-[12px] !font-medium !text-[#60798a]">{label}</p></main>;
 }
 
+function ErrorScreen({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return <main className="admin-root flex min-h-screen flex-col items-center justify-center bg-[#edf7ff] px-6 text-center"><BrandMark /><h1 className="mt-10 !text-[20px] !font-semibold !text-[#173249]">Praxisdaten nicht erreichbar</h1><p className="mt-3 max-w-lg !text-[13px] !leading-6 !text-[#60798a]">{message || "Bitte prüfen Sie Ihre Verbindung und versuchen Sie es erneut."}</p><button onClick={onRetry} className="admin-primary-button mt-6 h-11">Erneut versuchen</button></main>;
+}
+
 function AdminToaster() {
-  return <Toaster position="top-right" richColors closeButton toastOptions={{ className: "admin-root !rounded-[12px] !border-[#c8dbe7] !font-[Poppins] !text-[12px]" }} />;
+  return <Toaster position="top-right" richColors closeButton toastOptions={{ className: "admin-root !rounded-[12px] !border-[#c8dbe7] !text-[12px]" }} />;
 }

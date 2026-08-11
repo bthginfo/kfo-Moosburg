@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
-import { CalendarPlus, Check, Plus, Trash2, UserRound } from "lucide-react";
+import { CalendarDays, Check, ExternalLink, UserRound } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -33,7 +33,7 @@ const emptyDraft: CustomerDraft = {
   patientNumber: "",
   status: "active",
   notes: "",
-  reminderConsent: true,
+  reminderConsent: false,
   appointments: [],
 };
 
@@ -56,14 +56,6 @@ export function CustomerDialog({ open, customer, saving, onOpenChange, onSave }:
     if (draft.email && !/^\S+@\S+\.\S+$/.test(draft.email)) return setError("Bitte prüfen Sie die E-Mail-Adresse.");
     setError("");
     try { await onSave(draft); } catch (caught) { setError(caught instanceof Error ? caught.message : "Speichern nicht möglich."); }
-  }
-
-  function addAppointment() {
-    set("appointments", [...draft.appointments, { date: "", time: "", type: "Kontrolle", note: "" }]);
-  }
-
-  function updateAppointment(index: number, key: string, value: string) {
-    set("appointments", draft.appointments.map((item, itemIndex) => itemIndex === index ? { ...item, [key]: value } : item));
   }
 
   return (
@@ -103,20 +95,17 @@ export function CustomerDialog({ open, customer, saving, onOpenChange, onSave }:
               </label>
             </Section>
 
-            <Section title="Termine" description="Mehrere zukünftige Termine können getrennt verwaltet werden" noBorder>
-              <div className="space-y-3">
-                {draft.appointments.map((appointment, index) => (
-                  <div key={appointment.id ?? index} className="grid gap-3 rounded-[13px] border border-[#dbe7ee] bg-[#fbfdfe] p-3 md:grid-cols-2 md:items-end lg:grid-cols-[1.15fr_.85fr_1.2fr_1.5fr_auto]">
-                    <Field label="Datum"><input type="date" required className="admin-field w-full" value={appointment.date} onChange={(e) => updateAppointment(index, "date", e.target.value)} /></Field>
-                    <Field label="Uhrzeit"><input type="time" required className="admin-field w-full" value={appointment.time} onChange={(e) => updateAppointment(index, "time", e.target.value)} /></Field>
-                    <Field label="Terminart"><input className="admin-field w-full" value={appointment.type} onChange={(e) => updateAppointment(index, "type", e.target.value)} /></Field>
-                    <Field label="Notiz"><input className="admin-field w-full" value={appointment.note ?? ""} onChange={(e) => updateAppointment(index, "note", e.target.value)} /></Field>
-                    <button type="button" onClick={() => set("appointments", draft.appointments.filter((_, i) => i !== index))} className="admin-icon-button text-[#a83b35]" aria-label="Termin entfernen"><Trash2 className="h-4 w-4" /></button>
+            <Section title="Termine" description="Termine werden zentral im kollisionsgeprüften Terminplan verwaltet" noBorder>
+              <div className="space-y-2">
+                {draft.appointments.map((appointment) => (
+                  <div key={appointment.id} className="flex items-center gap-3 rounded-[13px] border border-[#dbe7ee] bg-[#fbfdfe] p-3">
+                    <CalendarDays className="h-4 w-4 shrink-0 text-[#50809c]" />
+                    <div className="min-w-0 flex-1"><div className="text-[12px] font-semibold text-[#29475d]">{appointment.date} · {appointment.time || "ohne Uhrzeit"}</div><div className="truncate text-[11px] text-[#718692]">{appointment.type || "Termin"}</div></div>
                   </div>
                 ))}
-                {!draft.appointments.length && <div className="rounded-[12px] border border-dashed border-[#c6d8e4] px-4 py-6 text-center text-[12px] text-[#718895]">Noch kein Termin hinterlegt.</div>}
+                {!draft.appointments.length && <div className="rounded-[12px] border border-dashed border-[#c6d8e4] px-4 py-5 text-center text-[12px] text-[#718895]">Noch kein Termin hinterlegt.</div>}
               </div>
-              <button type="button" onClick={addAppointment} className="admin-secondary-button mt-3 h-10"><CalendarPlus className="h-4 w-4" />Termin hinzufügen</button>
+              <a href="/verwaltung/termine" className="admin-secondary-button mt-3 h-10 no-underline"><ExternalLink className="h-4 w-4" />Im Terminplan verwalten</a>
             </Section>
           </div>
           <div className="flex shrink-0 flex-col gap-3 border-t border-[#deebf2] bg-[#fbfdfe] px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">

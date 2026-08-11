@@ -2,10 +2,15 @@ import { useState } from "react";
 import { MapPin, Phone, Mail, Clock, ExternalLink } from "lucide-react";
 import { ScrollReveal } from "./ScrollReveal";
 import { useHomeContent } from "./hooks/useHomeContent";
+import { safeEmailAddress, safeGoogleMapsEmbed, safeHref, safeTelephoneHref } from "../lib/safeContent";
 
 export function ContactSection() {
   const [mapActive, setMapActive] = useState(false);
   const c = useHomeContent();
+  const mapsUrl = safeGoogleMapsEmbed(c.contact_maps_url);
+  const phoneHref = safeTelephoneHref(c.contact_phone);
+  const email = safeEmailAddress(c.contact_email);
+  const instagramHref = safeHref(c.contact_instagram, "");
 
   return (
     <section id="kontakt">
@@ -48,7 +53,7 @@ export function ContactSection() {
                 {/* Contact items */}
                 <div className="space-y-3">
                   <a
-                    href={`tel:${c.contact_phone.replace(/\s/g, "")}`}
+                    href={phoneHref || undefined}
                     className="flex items-center gap-4 p-4 rounded-2xl hover:bg-[#edf7ff] transition-colors group"
                   >
                     <div className="w-10 h-10 rounded-full bg-[#edf7ff] group-hover:bg-white flex items-center justify-center shrink-0 transition-colors">
@@ -86,7 +91,7 @@ export function ContactSection() {
                   </a>
 
                   <a
-                    href={`mailto:${c.contact_email}?subject=Anfrage%20an%20KFO%20Moosburg`}
+                    href={email ? `mailto:${email}?subject=Anfrage%20an%20KFO%20Moosburg` : undefined}
                     className="flex items-center gap-4 p-4 rounded-2xl hover:bg-[#edf7ff] transition-colors group"
                   >
                     <div className="w-10 h-10 rounded-full bg-[#edf7ff] group-hover:bg-white flex items-center justify-center shrink-0 transition-colors">
@@ -129,9 +134,9 @@ export function ContactSection() {
                 </div>
 
                 {/* Social */}
-                <div className="flex gap-3">
+                {instagramHref && <div className="flex gap-3">
                   <a
-                    href={c.contact_instagram}
+                    href={instagramHref}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-11 h-11 rounded-full bg-[#edf7ff] hover:bg-[#f58a07] flex items-center justify-center transition-colors group"
@@ -141,15 +146,16 @@ export function ContactSection() {
                       <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
                     </svg>
                   </a>
-                </div>
+                </div>}
               </div>
             </ScrollReveal>
 
             {/* Right: Google Maps with scroll protection */}
-            <ScrollReveal direction="right" delay={200}>
-              <div className="rounded-[1.25rem] overflow-hidden h-80 md:h-auto relative">
-                {!mapActive && (
+            <ScrollReveal direction="right" delay={200} className="h-full">
+              <div className="relative h-80 overflow-hidden rounded-[1.25rem] md:h-full md:min-h-[400px]">
+                {!mapActive && mapsUrl && (
                   <button
+                    type="button"
                     onClick={() => setMapActive(true)}
                     className="absolute inset-0 z-10 bg-[#063255]/10 backdrop-blur-[1px] flex flex-col items-center justify-center gap-3 cursor-pointer transition-all hover:bg-[#063255]/5 group"
                   >
@@ -160,24 +166,34 @@ export function ContactSection() {
                       className="text-[#063255] bg-white/90 backdrop-blur-sm rounded-full px-4 py-1.5 text-sm shadow-md"
                       style={{ fontWeight: 500 }}
                     >
-                      Karte aktivieren
+                      Google Maps laden
+                    </span>
+                    <span className="max-w-xs px-5 text-center text-xs text-[#063255]">
+                      Erst danach wird eine Verbindung zu Google hergestellt.
                     </span>
                   </button>
                 )}
-                <iframe
-                  src={c.contact_maps_url}
-                  width="100%"
-                  height="100%"
-                  style={{
-                    border: 0,
-                    minHeight: "400px",
-                    pointerEvents: mapActive ? "auto" : "none",
-                  }}
-                  allowFullScreen
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  title="Standort Kieferorthopädie Moosburg"
-                />
+                {!mapsUrl && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#edf7ff] px-6 text-center">
+                    <MapPin className="w-8 h-8 text-[#f58a07]" aria-hidden="true" />
+                    <p className="text-sm text-[#4a5d69]" style={{ marginBottom: 0 }}>
+                      Die Karte ist derzeit nicht verfügbar. Die Adresse finden Sie links daneben.
+                    </p>
+                  </div>
+                )}
+                {mapActive && mapsUrl && (
+                  <iframe
+                    src={mapsUrl}
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0, minHeight: "400px" }}
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                    sandbox="allow-scripts allow-same-origin allow-popups"
+                    title="Standort Kieferorthopädie Moosburg"
+                  />
+                )}
               </div>
             </ScrollReveal>
           </div>

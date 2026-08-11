@@ -2,7 +2,9 @@ import { ScrollReveal } from "./ScrollReveal";
 import { AnimatedCounter } from "./AnimatedCounter";
 import { motion } from "motion/react";
 import { useHomeContent } from "./hooks/useHomeContent";
+import { IMAGE_FALLBACK } from "./images";
 import { getLucideIcon } from "./hooks/useLucideIcon";
+import { BoldText } from "../lib/safeContent";
 
 export function AboutSection() {
   const c = useHomeContent();
@@ -21,23 +23,17 @@ export function AboutSection() {
             {/* Left: Text */}
             <div className="flex flex-col justify-center items-start order-2 md:order-1">
               <ScrollReveal direction="left">
-                <h3 className="text-2xl md:text-[2.25rem] leading-tight">
+                <h2 className="text-2xl md:text-[2.25rem] leading-tight">
                   {c.about_title}
-                </h3>
+                </h2>
               </ScrollReveal>
               <div className="h-4" />
               <ScrollReveal direction="left" delay={100}>
-                <p dangerouslySetInnerHTML={{
-                  __html: (c.about_paragraph1 || "")
-                    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-[#0d1317]">$1</strong>')
-                }} />
+                <BoldText text={c.about_paragraph1 || ""} />
               </ScrollReveal>
               <div className="h-2" />
               <ScrollReveal direction="left" delay={200}>
-                <p dangerouslySetInnerHTML={{
-                  __html: (c.about_paragraph2 || "")
-                    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-[#0d1317]">$1</strong>')
-                }} />
+                <BoldText text={c.about_paragraph2 || ""} />
               </ScrollReveal>
 
               {/* Stats row */}
@@ -72,7 +68,7 @@ export function AboutSection() {
                   whileHover={{ scale: 1.03 }}
                   transition={{ duration: 0.5 }}
                   src={c.about_image}
-                  alt="Team der Kieferorthopädie Moosburg"
+                  alt={c.about_image === IMAGE_FALLBACK ? "" : "Team der Kieferorthopädie Moosburg"}
                   className="w-full h-full object-cover"
                   loading="lazy"
                 />

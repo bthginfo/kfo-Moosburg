@@ -2,12 +2,17 @@ import { IMAGES } from "./images";
 import { ChevronDown } from "lucide-react";
 import { motion } from "motion/react";
 import { useHomeContent } from "./hooks/useHomeContent";
+import { IMAGE_FALLBACK } from "./images";
 import { openBooking } from "../../config/booking";
 
 const fadeUp = (delay: number) => ({
   initial: { opacity: 0, y: 30 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.7, delay, ease: [0.25, 0.46, 0.45, 0.94] },
+  transition: {
+    duration: 0.7,
+    delay,
+    ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number],
+  },
 });
 
 export function HeroSection() {
@@ -72,7 +77,7 @@ export function HeroSection() {
             >
               <img
                 src={c.hero_image}
-                alt="Kieferorthopädie Moosburg – Moderne Praxis"
+                alt={c.hero_image === IMAGE_FALLBACK ? "" : "Kieferorthopädie Moosburg – Moderne Praxis"}
                 className="relative z-[2] w-full h-full object-cover rounded-2xl shadow-2xl"
                 loading="eager"
               />

@@ -1,16 +1,14 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+import type { VercelRequest, VercelResponse } from "../src/server/vercelTypes.js";
 import {
   apiError,
-  appendEvents,
   customerWithAppointments,
-  deleteEvent,
   ensureWriteOrigin,
+  isValidEmail,
   loadStore,
-  normalizeAppointments,
   normalizeCustomer,
   requireAdmin,
+  saveCustomerRecord,
   setPrivateResponse,
-  upsertEvent,
 } from "../src/server/kfoAdmin.js";
 
 function payload(req: VercelRequest) {
@@ -36,38 +34,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ? store.customers.find((item) => item.id === String(input.id || req.body?.id || ""))
         : undefined;
       if (req.method === "PATCH" && !existing) return res.status(404).json({ error: "not_found", message: "Kund:in wurde nicht gefunden." });
+      if (input.status && !["active", "paused", "completed", "archived"].includes(input.status)) {
+        return res.status(400).json({ error: "validation_error", message: "Der ausgewählte Status ist ungültig." });
+      }
       const customer = normalizeCustomer(input, existing);
       if (!customer.firstName || !customer.lastName) {
         return res.status(400).json({ error: "validation_error", message: "Vorname und Nachname sind erforderlich." });
       }
-      const existingAppointments = store.appointments.filter((item) => item.customerId === customer.id);
-      const appointmentsProvided = Array.isArray(input.appointments);
-      const appointments = appointmentsProvided
-        ? normalizeAppointments(input.appointments, customer.id, existingAppointments)
-        : existingAppointments;
-      const events = [upsertEvent("customers", customer)];
-      if (appointmentsProvided) {
-        const nextIds = new Set(appointments.map((item) => item.id));
-        for (const old of existingAppointments) if (!nextIds.has(old.id)) events.push(deleteEvent("appointments", old.id));
-        for (const appointment of appointments) events.push(upsertEvent("appointments", appointment));
+      if (customer.email && !isValidEmail(customer.email)) {
+        return res.status(400).json({ error: "validation_error", message: "Bitte prüfen Sie die E-Mail-Adresse." });
       }
-      await appendEvents(events);
-      return res.status(req.method === "POST" ? 201 : 200).json({ customer: { ...customer, appointments } });
+      if (input.birthDate && !customer.birthDate) {
+        return res.status(400).json({ error: "validation_error", message: "Bitte prüfen Sie das Geburtsdatum." });
+      }
+      const saved = await saveCustomerRecord(customer, {
+        create: req.method === "POST",
+        expectedUpdatedAt: input.updatedAt,
+      });
+      const responseStore = saved.status === "archived" ? await loadStore() : store;
+      return res.status(req.method === "POST" ? 201 : 200).json({
+        customer: customerWithAppointments(saved, responseStore.appointments),
+      });
     }
 
     if (req.method === "DELETE") {
       const id = String(req.body?.id || req.query.id || "");
       const customer = store.customers.find((item) => item.id === id);
       if (!customer) return res.status(404).json({ error: "not_found", message: "Kund:in wurde nicht gefunden." });
-      const events = [deleteEvent("customers", id)];
-      for (const appointment of store.appointments.filter((item) => item.customerId === id)) {
-        events.push(deleteEvent("appointments", appointment.id));
-      }
-      for (const reminder of store.reminders.filter((item) => item.customerIds.includes(id))) {
-        events.push(upsertEvent("reminders", { ...reminder, customerIds: reminder.customerIds.filter((customerId) => customerId !== id), updatedAt: new Date().toISOString() }));
-      }
-      await appendEvents(events);
-      return res.status(200).json({ success: true });
+      await saveCustomerRecord({ ...customer, status: "archived" }, {
+        create: false,
+        expectedUpdatedAt: req.body?.updatedAt || req.query.updatedAt,
+      });
+      return res.status(200).json({ success: true, archived: true });
     }
 
     return res.status(405).json({ error: "method_not_allowed" });

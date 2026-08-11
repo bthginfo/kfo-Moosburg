@@ -1,15 +1,40 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+import type { VercelRequest, VercelResponse } from "../src/server/vercelTypes.js";
 import {
   apiError,
-  appendEvents,
   ensureWriteOrigin,
+  isValidEmail,
   loadStore,
   normalizeAppointments,
   normalizeCustomer,
   requireAdmin,
   setPrivateResponse,
-  upsertEvent,
 } from "../src/server/kfoAdmin.js";
+import {
+  importCustomersWithScheduleAppointments,
+  SchedulingError,
+} from "../src/server/kfoScheduling.js";
+
+function text(value: unknown): string {
+  return typeof value === "string" ? value.trim() : value == null ? "" : String(value).trim();
+}
+
+function validDate(value: unknown): boolean {
+  const date = text(value);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
+  const parsed = new Date(`${date}T12:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === date;
+}
+
+function validTime(value: unknown): boolean {
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(text(value));
+}
+
+function appointmentInputs(row: any): any[] {
+  if (Array.isArray(row?.appointments)) return row.appointments;
+  return row?.appointmentDate || row?.appointmentTime
+    ? [{ date: row.appointmentDate, time: row.appointmentTime, type: row.appointmentType }]
+    : [];
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setPrivateResponse(res);
@@ -24,7 +49,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const store = await loadStore();
     const strategy = ["skip", "update", "create"].includes(req.body?.duplicateStrategy) ? req.body.duplicateStrategy : "skip";
-    const events: ReturnType<typeof upsertEvent>[] = [];
+    const customersToSave = [] as ReturnType<typeof normalizeCustomer>[];
+    const appointmentsToSave = [] as ReturnType<typeof normalizeAppointments>;
+    const appointmentRows = new Map<string, number>();
     const result = { imported: 0, updated: 0, skipped: 0, errors: [] as { row: number; message: string }[] };
 
     for (let index = 0; index < rows.length; index += 1) {
@@ -32,6 +59,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const candidate = normalizeCustomer(row);
       if (!candidate.firstName || !candidate.lastName) {
         result.errors.push({ row: index + 2, message: "Vorname oder Nachname fehlt." });
+        continue;
+      }
+      if (candidate.email && !isValidEmail(candidate.email)) {
+        result.errors.push({ row: index + 2, message: "Die E-Mail-Adresse ist ungültig." });
+        continue;
+      }
+      if (row?.birthDate && !candidate.birthDate) {
+        result.errors.push({ row: index + 2, message: "Das Geburtsdatum ist ungültig." });
+        continue;
+      }
+      if (row?.status && !["active", "paused", "completed", "archived"].includes(row.status)) {
+        result.errors.push({ row: index + 2, message: "Der Kundenstatus ist ungültig." });
+        continue;
+      }
+      const rawAppointments = appointmentInputs(row);
+      if (rawAppointments.length > 20) {
+        result.errors.push({ row: index + 2, message: "Pro Person können höchstens 20 Termine importiert werden." });
+        continue;
+      }
+      const invalidAppointment = rawAppointments.find((appointment) =>
+        !validDate(appointment?.date ?? appointment?.appointmentDate)
+        || !validTime(appointment?.time ?? appointment?.appointmentTime),
+      );
+      if (invalidAppointment) {
+        result.errors.push({ row: index + 2, message: "Termindatum oder Uhrzeit fehlt oder ist ungültig." });
         continue;
       }
       const duplicate = store.customers.find((item) =>
@@ -42,14 +94,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         result.skipped += 1;
         continue;
       }
+      if (duplicate && strategy === "create" && candidate.patientNumber && duplicate.patientNumber === candidate.patientNumber) {
+        result.errors.push({ row: index + 2, message: "Die Patientennummer ist bereits vergeben; der Datensatz wurde nicht doppelt angelegt." });
+        continue;
+      }
       const customer = normalizeCustomer(row, duplicate && strategy === "update" ? duplicate : undefined);
-      events.push(upsertEvent("customers", customer));
-      const appointments = normalizeAppointments(row.appointments || (row.appointmentDate ? [{
-        date: row.appointmentDate,
-        time: row.appointmentTime,
-        type: row.appointmentType,
-      }] : []), customer.id, store.appointments.filter((item) => item.customerId === customer.id));
-      for (const appointment of appointments) events.push(upsertEvent("appointments", appointment));
+      customersToSave.push(customer);
+      const appointments = normalizeAppointments(rawAppointments, customer.id);
+      for (const appointment of appointments) {
+        appointmentsToSave.push(appointment);
+        appointmentRows.set(appointment.id, index + 2);
+      }
       if (duplicate && strategy === "update") {
         Object.assign(duplicate, customer);
         result.updated += 1;
@@ -59,9 +114,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    await appendEvents(events);
+    const importResult = await importCustomersWithScheduleAppointments(customersToSave, appointmentsToSave);
+    for (const appointmentId of importResult.skippedAppointmentIds) {
+      result.errors.push({
+        row: appointmentRows.get(appointmentId) || 0,
+        message: "Der Termin überschneidet sich mit einem bereits vorhandenen aktiven Termin und wurde nicht doppelt angelegt.",
+      });
+    }
     return res.status(200).json(result);
   } catch (error) {
+    if (error instanceof SchedulingError) {
+      return res.status(error.status).json({ error: error.code, code: error.code, message: error.message });
+    }
     apiError(res, error);
   }
 }

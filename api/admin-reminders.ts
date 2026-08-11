@@ -1,14 +1,13 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+import type { VercelRequest, VercelResponse } from "../src/server/vercelTypes.js";
 import {
   apiError,
-  appendEvents,
-  deleteEvent,
+  deleteReminderRecord,
   ensureWriteOrigin,
   loadStore,
   normalizeReminder,
   requireAdmin,
+  saveReminderRecord,
   setPrivateResponse,
-  upsertEvent,
 } from "../src/server/kfoAdmin.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -28,7 +27,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           relation: item.offsetDays > 0 ? "after" : "before",
           sentCount: sentByRule.get(item.id) || 0,
         })),
-        recentDeliveries: store.deliveries.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 100),
+        recentDeliveries: store.deliveries.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 500),
       });
     }
 
@@ -43,16 +42,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (reminder.audience === "selected" && reminder.customerIds.length === 0) {
         return res.status(400).json({ error: "validation_error", message: "Bitte wählen Sie mindestens eine Kundin oder einen Kunden aus." });
       }
-      await appendEvents([upsertEvent("reminders", reminder)]);
+      if (reminder.audience === "selected") {
+        const existingCustomerIds = new Set(store.customers.map((item) => item.id));
+        if (reminder.customerIds.some((id) => !existingCustomerIds.has(id))) {
+          return res.status(400).json({ error: "validation_error", message: "Mindestens eine ausgewählte Person existiert nicht mehr. Bitte laden Sie die Seite neu." });
+        }
+      }
+      const saved = await saveReminderRecord(reminder, {
+        create: req.method === "POST",
+        expectedUpdatedAt: input.updatedAt,
+      });
       return res.status(req.method === "POST" ? 201 : 200).json({
-        reminder: { ...reminder, days: Math.abs(reminder.offsetDays), relation: reminder.offsetDays > 0 ? "after" : "before" },
+        reminder: { ...saved, days: Math.abs(saved.offsetDays), relation: saved.offsetDays > 0 ? "after" : "before" },
       });
     }
 
     if (req.method === "DELETE") {
       const id = String(req.body?.id || req.query.id || "");
       if (!store.reminders.some((item) => item.id === id)) return res.status(404).json({ error: "not_found" });
-      await appendEvents([deleteEvent("reminders", id)]);
+      await deleteReminderRecord(id, req.body?.updatedAt || req.query.updatedAt);
       return res.status(200).json({ success: true });
     }
 

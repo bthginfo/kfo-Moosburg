@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#edf7ff" />
+      <stop offset="1" stop-color="#cfe7f8" />
+    </linearGradient>
+    <linearGradient id="tooth" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.96" />
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.72" />
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="1000" fill="url(#background)" />
+  <circle cx="1360" cy="170" r="330" fill="#f58a07" opacity="0.12" />
+  <circle cx="180" cy="850" r="420" fill="#063255" opacity="0.08" />
+  <path d="M0 690C250 570 410 810 680 700s430-120 920 20v280H0Z" fill="#063255" opacity="0.07" />
+  <path d="M0 790c320-160 520 70 790-20s510-80 810 20v210H0Z" fill="#f58a07" opacity="0.08" />
+
+  <g transform="translate(610 230)">
+    <path
+      d="M190 0c-58 0-94 30-145 30C15 30 0 53 0 86c0 88 64 122 81 214 15 79 17 184 72 184 42 0 34-130 82-130s40 130 82 130c55 0 57-105 72-184 17-92 81-126 81-214 0-33-15-56-45-56-51 0-87-30-145-30-34 0-60 12-90 12S224 0 190 0Z"
+      fill="url(#tooth)"
+      stroke="#ffffff"
+      stroke-width="12"
+      stroke-linejoin="round"
+    />
+    <path d="M147 150c27 18 59 27 93 27s66-9 93-27" fill="none" stroke="#f58a07" stroke-width="14" stroke-linecap="round" opacity="0.65" />
+    <circle cx="155" cy="110" r="9" fill="#063255" opacity="0.24" />
+    <circle cx="325" cy="110" r="9" fill="#063255" opacity="0.24" />
+  </g>
+</svg>

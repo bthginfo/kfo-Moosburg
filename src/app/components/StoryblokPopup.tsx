@@ -1,9 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useId, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, Calendar, Sparkles } from "lucide-react";
 import { useStoryblokContent, assetUrl } from "../../storyblok/useStoryblokContent";
 import { DEFAULTS } from "../../storyblok/contentDefaults";
 import { openBooking } from "../../config/booking";
+import { safeHref } from "../lib/safeContent";
+import { lockBodyScroll } from "../lib/bodyScrollLock";
 
 const SESSION_KEY = "kfo-popup-dismissed";
 
@@ -11,6 +13,10 @@ export function StoryblokPopup() {
   const { story, isConnected } = useStoryblokContent("einstellungen");
   const [visible, setVisible] = useState(false);
   const [hasTriggered, setHasTriggered] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const titleId = useId();
+  const descriptionId = useId();
 
   // Get popup config from Storyblok (flat) or defaults
   const c = isConnected && story ? story.content : null;
@@ -18,7 +24,7 @@ export function StoryblokPopup() {
   const config = {
     enabled: c?.popup_enabled ?? DEFAULTS.popup_enabled,
     title: c?.popup_title || DEFAULTS.popup_title,
-    text: c?.popup_text || DEFAULTS.popup_text,
+    text: String(c?.popup_text || DEFAULTS.popup_text),
     cta_text: c?.popup_cta_text || DEFAULTS.popup_cta_text,
     cta_link: c?.popup_cta_link || DEFAULTS.popup_cta_link,
     cta_is_drflex: c?.popup_cta_is_drflex ?? DEFAULTS.popup_cta_is_drflex,
@@ -53,11 +59,60 @@ export function StoryblokPopup() {
     } catch { /* silent */ }
   }, []);
 
+  useEffect(() => {
+    if (!visible || !config.enabled) return;
+
+    const previouslyFocused = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+    const focusFrame = window.requestAnimationFrame(() => closeButtonRef.current?.focus());
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        handleClose();
+        return;
+      }
+
+      if (event.key !== "Tab" || !dialogRef.current) return;
+      const focusable = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      );
+      if (focusable.length === 0) {
+        event.preventDefault();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    const releaseScrollLock = lockBodyScroll();
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      releaseScrollLock();
+      document.removeEventListener("keydown", handleKeyDown);
+      previouslyFocused?.focus();
+    };
+  }, [visible, config.enabled, handleClose]);
+
   const handleCTA = useCallback(() => {
     if (config.cta_is_drflex) {
       openBooking();
     } else if (config.cta_link) {
-      window.location.href = config.cta_link;
+      const href = safeHref(config.cta_link, "");
+      if (href) window.location.assign(href);
     }
     handleClose();
   }, [config.cta_is_drflex, config.cta_link, handleClose]);
@@ -76,8 +131,8 @@ export function StoryblokPopup() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={handleClose}
             className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[300]"
+            aria-hidden="true"
           />
 
           {/* Popup */}
@@ -86,21 +141,31 @@ export function StoryblokPopup() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ type: "spring", damping: 22, stiffness: 250 }}
-            className="fixed inset-0 z-[301] flex items-center justify-center p-4"
+            className="fixed inset-0 z-[301] flex items-center justify-center overflow-y-auto p-4"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) handleClose();
+            }}
           >
             <div
-              className="relative w-full max-w-md rounded-3xl shadow-2xl overflow-hidden"
+              ref={dialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={titleId}
+              aria-describedby={descriptionId}
+              className="relative w-full max-w-md max-h-[calc(100dvh-2rem)] rounded-3xl shadow-2xl overflow-y-auto overscroll-contain"
               style={{ backgroundColor: bgColor }}
             >
               {/* Close button */}
               <button
+                ref={closeButtonRef}
+                type="button"
                 onClick={handleClose}
                 className={`absolute top-4 right-4 z-10 w-9 h-9 rounded-full flex items-center justify-center transition-colors cursor-pointer ${
                   isDark
                     ? "bg-white/15 hover:bg-white/25 text-white"
                     : "bg-[#f6f7f9] hover:bg-[#eaebf0] text-[#4a5d69]"
                 }`}
-                aria-label="Popup schliessen"
+                aria-label="Popup schließen"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -130,14 +195,16 @@ export function StoryblokPopup() {
                   <Sparkles className="w-6 h-6 text-[#f58a07]" />
                 </motion.div>
 
-                <h3
+                <h2
+                  id={titleId}
                   className={`text-xl md:text-2xl mb-3 ${isDark ? "text-white" : "text-[#0d1317]"}`}
                   style={{ fontWeight: 700 }}
                 >
                   {config.title}
-                </h3>
+                </h2>
 
                 <p
+                  id={descriptionId}
                   className={`text-sm mb-6 ${isDark ? "text-white/75" : "text-[#4a5d69]"}`}
                   style={{ marginBottom: 0 }}
                 >
@@ -157,6 +224,7 @@ export function StoryblokPopup() {
                 {/* CTA Buttons */}
                 <div className="flex flex-col gap-2.5">
                   <motion.button
+                    type="button"
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
                     onClick={handleCTA}
@@ -168,6 +236,7 @@ export function StoryblokPopup() {
                   </motion.button>
 
                   <button
+                    type="button"
                     onClick={handleClose}
                     className={`w-full rounded-full px-6 py-3 text-sm transition-colors cursor-pointer ${
                       isDark
@@ -176,7 +245,7 @@ export function StoryblokPopup() {
                     }`}
                     style={{ fontWeight: 400 }}
                   >
-                    Vielleicht spaeter
+                    Vielleicht später
                   </button>
                 </div>
               </div>

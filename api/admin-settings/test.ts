@@ -1,13 +1,16 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+import type { VercelRequest, VercelResponse } from "../../src/server/vercelTypes.js";
 import {
   apiError,
   buildTransport,
   ensureWriteOrigin,
+  isValidEmail,
   loadStore,
   reminderHtml,
   requireAdmin,
   setPrivateResponse,
 } from "../../src/server/kfoAdmin.js";
+
+export const maxDuration = 60;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setPrivateResponse(res);
@@ -19,7 +22,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const settings = store.settings.find((item) => item.id === "smtp");
     if (!settings) return res.status(400).json({ error: "smtp_not_configured", message: "Bitte speichern Sie zuerst die SMTP-Einstellungen." });
     const recipient = String(req.body?.email || req.body?.recipient || "").trim().toLowerCase();
-    if (!recipient || !recipient.includes("@")) return res.status(400).json({ error: "validation_error", message: "Bitte geben Sie eine gültige Test-E-Mail-Adresse ein." });
+    if (!isValidEmail(recipient)) return res.status(400).json({ error: "validation_error", message: "Bitte geben Sie eine gültige Test-E-Mail-Adresse ein." });
     const transport = buildTransport(settings);
     await transport.verify();
     await transport.sendMail({

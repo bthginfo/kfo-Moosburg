@@ -3,6 +3,8 @@ import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { ScrollReveal } from "./ScrollReveal";
 import { motion, AnimatePresence } from "motion/react";
 import { useHomeContent } from "./hooks/useHomeContent";
+import { IMAGE_FALLBACK } from "./images";
+import { lockBodyScroll } from "../lib/bodyScrollLock";
 
 interface GalleryImage {
   src: string;
@@ -28,10 +30,10 @@ function Lightbox({
       if (e.key === "ArrowLeft") onPrev();
       if (e.key === "ArrowRight") onNext();
     };
-    document.body.style.overflow = "hidden";
+    const releaseScrollLock = lockBodyScroll();
     window.addEventListener("keydown", handleKey);
     return () => {
-      document.body.style.overflow = "";
+      releaseScrollLock();
       window.removeEventListener("keydown", handleKey);
     };
   }, [onClose, onPrev, onNext]);
@@ -99,7 +101,7 @@ export function GallerySection() {
   const galleryImages: GalleryImage[] = [1, 2, 3, 4, 5, 6, 7, 8].map((i) => ({
     src: c[`gallery_image_${i}`],
     alt: c[`gallery_alt_${i}`] || `Praxis Bild ${i}`,
-  })).filter(img => img.src);
+  })).filter((img) => img.src && img.src !== IMAGE_FALLBACK);
 
   const closeLightbox = useCallback(() => setLightboxIndex(null), []);
   const prevImage = useCallback(
@@ -110,6 +112,10 @@ export function GallerySection() {
     () => setLightboxIndex((i) => (i !== null ? (i + 1) % galleryImages.length : null)),
     [galleryImages.length]
   );
+
+  // Ohne freigegebene Praxisfotos zeigen wir keine Galerie aus identischen
+  // Platzhaltergrafiken. Sobald Storyblok echte Bilder liefert, erscheint sie.
+  if (galleryImages.length === 0) return null;
 
   return (
     <>
