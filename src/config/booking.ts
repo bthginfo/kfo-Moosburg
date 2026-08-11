@@ -1,9 +1,10 @@
-// The public website intentionally keeps DR.FLEX until the practice explicitly
-// approves switching to the prepared in-house booking flow.
-const DRFLEX_BOOKING_URL = "https://dr-flex.de/Kieferorthop%C3%A4die/Moosburg/85368/M%C3%BCnchener_Stra%C3%9Fe/Kieferorthop%C3%A4die_Moosburg/Route_finden";
+// DR.FLEX wird erst nach einem ausdrücklichen Klick geladen. So bleibt die
+// öffentliche Seite bis dahin frei von Drittanbieter-Requests und das
+// Buchungsfenster öffnet sich trotzdem direkt auf der Website.
+export const DRFLEX_EMBED_URL = "https://dr-flex.de/embed?medicalPracticeId=46546";
+export const BOOKING_OPEN_EVENT = "kfo:open-booking";
 
-/** Opens the external booking page without running third-party code in this origin. */
+/** Öffnet das eingebettete DR.FLEX-Buchungsfenster. */
 export function openBooking(): void {
-  const opened = window.open(DRFLEX_BOOKING_URL, "_blank", "noopener,noreferrer");
-  if (opened) opened.opener = null;
+  window.dispatchEvent(new Event(BOOKING_OPEN_EVENT));
 }

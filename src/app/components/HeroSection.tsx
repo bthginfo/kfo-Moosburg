@@ -80,6 +80,8 @@ export function HeroSection() {
                 alt={c.hero_image === IMAGE_FALLBACK ? "" : "Kieferorthopädie Moosburg – Moderne Praxis"}
                 className="relative z-[2] w-full h-full object-cover rounded-2xl shadow-2xl"
                 loading="eager"
+                fetchPriority="high"
+                decoding="async"
               />
               {/* Orange decorative shapes with float animation */}
               <motion.div

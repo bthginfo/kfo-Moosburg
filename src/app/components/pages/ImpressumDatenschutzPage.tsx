@@ -247,7 +247,7 @@ export function ImpressumDatenschutzPage() {
                 <div>
                     <h3 className="text-[#0d1317] text-lg mb-2" style={{ fontWeight: 600 }}>Online-Terminvereinbarung (DR.FLEX)</h3>
                     <p>
-                      Die Schaltflächen zur Online-Terminvereinbarung öffnen die externe DR.FLEX-Seite in einem neuen Browser-Tab. Auf dieser Website ist kein DR.FLEX-Skript oder -Frame eingebettet; vor Ihrem Klick wird daher keine Verbindung zu DR.FLEX hergestellt.
+                      Die Online-Terminvereinbarung wird erst nach einem ausdrücklichen Klick als eingebettetes DR.FLEX-Buchungsfenster geöffnet. Dabei stellt Ihr Browser eine Verbindung zu DR.FLEX her und übermittelt die für die Terminbuchung erforderlichen Angaben direkt an diesen Anbieter. Vor dem Öffnen des Buchungsfensters wird keine Verbindung zu DR.FLEX hergestellt.
                     </p>
                     <p>
                       Nach dem Öffnen gelten die Datenschutzbestimmungen des externen Anbieters. Angaben, die Sie dort eingeben, werden unmittelbar auf dessen Website verarbeitet. Weitere Informationen finden Sie auf{" "}

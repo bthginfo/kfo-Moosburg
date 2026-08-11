@@ -125,7 +125,7 @@ export const DEFAULTS = {
   footer_copyright: "Kieferorthopädie Moosburg. Alle Rechte vorbehalten.",
 
   // ─── POPUP ───────────────────────────────────────────────────────────
-  popup_enabled: true,
+  popup_enabled: false,
   popup_title: "Jetzt Ersttermin sichern!",
   popup_text: "Vereinbaren Sie noch heute Ihren **kostenlosen Ersttermin** und lassen Sie sich unverbindlich beraten. Wir freuen uns auf Sie!",
   popup_cta_text: "Termin vereinbaren",

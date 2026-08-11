@@ -4,7 +4,7 @@ import { Footer } from "./Footer";
 import { StickyMobileCTA } from "./StickyMobileCTA";
 import { WhatsAppButton } from "./WhatsAppButton";
 import { BackToTop } from "./BackToTop";
-import { PracticePopup } from "./StoryblokPopup";
+import { BookingOverlay } from "./BookingOverlay";
 
 export function KFOLayout() {
   const isHomePage = useLocation().pathname === "/";
@@ -17,7 +17,7 @@ export function KFOLayout() {
       {isHomePage && <StickyMobileCTA />}
       {isHomePage && <WhatsAppButton />}
       <BackToTop />
-      {isHomePage && <PracticePopup />}
+      {isHomePage && <BookingOverlay />}
     </div>
   );
 }
