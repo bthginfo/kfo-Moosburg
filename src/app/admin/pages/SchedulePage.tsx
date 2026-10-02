@@ -45,6 +45,7 @@ import type {
   ScheduleBundle,
   ScheduleEntity,
   ScheduleResource,
+  IvorisIntegrationStatus,
 } from "../types";
 
 type Tab = "plan" | "online" | "settings";
@@ -70,6 +71,7 @@ export function SchedulePage({ customers, onLoggedOut }: Props) {
   const [resourceOpen, setResourceOpen] = useState(false);
   const [editingResource, setEditingResource] = useState<ScheduleResource | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const [ivorisStatus, setIvorisStatus] = useState<IvorisIntegrationStatus | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true); setError("");
@@ -79,6 +81,11 @@ export function SchedulePage({ customers, onLoggedOut }: Props) {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    let active = true;
+    adminApi.ivorisStatus().then((status) => { if (active) setIvorisStatus(status); }).catch(() => { if (active) setIvorisStatus(null); });
+    return () => { active = false; };
+  }, []);
 
   async function saveEntity(entity: ScheduleEntity, data: Record<string, unknown>, successMessage: string) {
     const response = await adminApi.saveScheduleEntity(entity, data);
@@ -104,7 +111,7 @@ export function SchedulePage({ customers, onLoggedOut }: Props) {
       action={<button onClick={openNewAppointment} className="admin-primary-button h-[43px] w-full sm:w-auto"><Plus className="h-[18px] w-[18px]" />Termin anlegen</button>}
     >
       <div className="schedule-page">
-      <ReadinessStrip settings={bundle?.settings} loading={loading} />
+      <ReadinessStrip settings={bundle?.settings} ivorisStatus={ivorisStatus} loading={loading} />
 
       <nav className="mt-5 flex overflow-x-auto rounded-[14px] border border-[#cddde7] bg-white p-1 shadow-[0_5px_16px_rgba(23,50,73,.04)]" aria-label="Bereiche der Terminplanung">
         <TabButton active={tab === "plan"} onClick={() => setTab("plan")} icon={CalendarDays} label="Terminplan" />
@@ -116,7 +123,7 @@ export function SchedulePage({ customers, onLoggedOut }: Props) {
         <div className="admin-enter mt-5">
           {tab === "plan" && <SchedulePlanner bundle={bundle} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onNew={openNewAppointment} onEdit={(item) => { setEditingAppointment(item); setAppointmentOpen(true); }} onDelete={(item) => setDeleteTarget({ entity: "appointment", id: item.id, updatedAt: item.updatedAt, title: "Termin löschen?", description: `${item.customerName} am ${formatDate(item.date)} um ${item.time} Uhr wird aus dem Terminplan entfernt.` })} />}
           {tab === "online" && <OnlineSlotsPanel bundle={bundle} onNewRule={() => { setEditingRule(null); setRuleOpen(true); }} onEditRule={(item) => { setEditingRule(item); setRuleOpen(true); }} onDeleteRule={(item) => setDeleteTarget({ entity: "availabilityRule", id: item.id, title: "Zeitfenster löschen?", description: "Dieses wöchentliche Zeitfenster wird aus der lokalen Online-Slot-Vorschau entfernt." })} onNewException={() => { setEditingException(null); setExceptionOpen(true); }} onEditException={(item) => { setEditingException(item); setExceptionOpen(true); }} onDeleteException={(item) => setDeleteTarget({ entity: "exception", id: item.id, title: "Ausnahme löschen?", description: "Die Sonderöffnung oder Schließzeit wird aus der Planung entfernt." })} />}
-          {tab === "settings" && <ScheduleSettingsPanel bundle={bundle} onSaveSettings={(data) => saveEntity("settings", data, "Buchungsgrenzen wurden gespeichert.")} onNewType={() => { setEditingType(null); setTypeOpen(true); }} onEditType={(item) => { setEditingType(item); setTypeOpen(true); }} onDeleteType={(item) => setDeleteTarget({ entity: "appointmentType", id: item.id, title: "Terminart löschen?", description: `${item.name} wird entfernt. Bestehende Termine bleiben erhalten, können die Terminart aber nicht mehr neu verwenden.` })} onNewResource={() => { setEditingResource(null); setResourceOpen(true); }} onEditResource={(item) => { setEditingResource(item); setResourceOpen(true); }} onDeleteResource={(item) => setDeleteTarget({ entity: "resource", id: item.id, title: "Ressource löschen?", description: `${item.name} wird aus der künftigen Planung entfernt.` })} />}
+          {tab === "settings" && <ScheduleSettingsPanel bundle={bundle} ivorisStatus={ivorisStatus} onSaveSettings={(data) => saveEntity("settings", data, "Buchungsgrenzen wurden gespeichert.")} onNewType={() => { setEditingType(null); setTypeOpen(true); }} onEditType={(item) => { setEditingType(item); setTypeOpen(true); }} onDeleteType={(item) => setDeleteTarget({ entity: "appointmentType", id: item.id, title: "Terminart löschen?", description: `${item.name} wird entfernt. Bestehende Termine bleiben erhalten, können die Terminart aber nicht mehr neu verwenden.` })} onNewResource={() => { setEditingResource(null); setResourceOpen(true); }} onEditResource={(item) => { setEditingResource(item); setResourceOpen(true); }} onDeleteResource={(item) => setDeleteTarget({ entity: "resource", id: item.id, title: "Ressource löschen?", description: `${item.name} wird aus der künftigen Planung entfernt.` })} />}
         </div>
       ) : null}
 
@@ -135,14 +142,14 @@ export function SchedulePage({ customers, onLoggedOut }: Props) {
   );
 }
 
-function ReadinessStrip({ settings, loading }: { settings?: BookingSettings; loading: boolean }) {
-  const integrationReady = settings?.integrationStatus === "ready";
+function ReadinessStrip({ settings, ivorisStatus, loading }: { settings?: BookingSettings; ivorisStatus: IvorisIntegrationStatus | null; loading: boolean }) {
+  const integrationReady = ivorisStatus?.state === "ready" && ivorisStatus.executionEnabled;
   return (
     <section className="overflow-hidden rounded-[15px] border border-[#b9d0dd] bg-white">
       <div className="grid divide-y divide-[#e1ebf1] md:grid-cols-3 md:divide-x md:divide-y-0">
         <StatusCell icon={CalendarCheck2} label="Interner Terminplan" value={loading ? "Wird geprüft …" : "Einsatzbereit"} tone="green" />
         <StatusCell icon={LockKeyhole} label="Online-Veröffentlichung" value="Noch nicht veröffentlicht" detail="Dr. Flex bleibt aktiv" tone="amber" />
-        <StatusCell icon={Link2} label="ivoris-Anbindung" value={integrationReady ? "Vorbereitet" : "Zugang ausstehend"} detail={settings?.lastSyncAt ? `Letzter Status: ${formatDateTime(settings.lastSyncAt)}` : "Webservice-Aktivierung erforderlich"} tone="blue" />
+        <StatusCell icon={Link2} label="ivoris REST API v2" value={integrationReady ? "Betriebsbereit" : "Sicher gesperrt"} detail={settings?.lastSyncAt ? `Letzter Status: ${formatDateTime(settings.lastSyncAt)}` : "Vertrag & Herstellerdoku ausstehend"} tone="blue" />
       </div>
     </section>
   );
@@ -209,7 +216,7 @@ function OnlineSlotsPanel({ bundle, onNewRule, onEditRule, onDeleteRule, onNewEx
   );
 }
 
-function ScheduleSettingsPanel({ bundle, onSaveSettings, onNewType, onEditType, onDeleteType, onNewResource, onEditResource, onDeleteResource }: { bundle: ScheduleBundle; onSaveSettings: (data: Record<string, unknown>) => Promise<void>; onNewType: () => void; onEditType: (item: AppointmentType) => void; onDeleteType: (item: AppointmentType) => void; onNewResource: () => void; onEditResource: (item: ScheduleResource) => void; onDeleteResource: (item: ScheduleResource) => void }) {
+function ScheduleSettingsPanel({ bundle, ivorisStatus, onSaveSettings, onNewType, onEditType, onDeleteType, onNewResource, onEditResource, onDeleteResource }: { bundle: ScheduleBundle; ivorisStatus: IvorisIntegrationStatus | null; onSaveSettings: (data: Record<string, unknown>) => Promise<void>; onNewType: () => void; onEditType: (item: AppointmentType) => void; onDeleteType: (item: AppointmentType) => void; onNewResource: () => void; onEditResource: (item: ScheduleResource) => void; onDeleteResource: (item: ScheduleResource) => void }) {
   return (
     <div className="grid gap-5 2xl:grid-cols-[minmax(0,1.4fr)_minmax(350px,.6fr)]">
       <div className="space-y-5">
@@ -235,7 +242,7 @@ function ScheduleSettingsPanel({ bundle, onSaveSettings, onNewType, onEditType, 
       <aside className="space-y-5">
         <PublicationLock />
         <BookingSettingsForm settings={bundle.settings} onSave={onSaveSettings} />
-        <IntegrationPanel settings={bundle.settings} />
+        <IntegrationPanel status={ivorisStatus} />
       </aside>
     </div>
   );
@@ -250,9 +257,9 @@ function BookingSettingsForm({ settings, onSave }: { settings: BookingSettings; 
 
 function PublicationLock() { return <section className="rounded-[16px] border border-[#dfbd80] bg-[#fff9ec] p-5"><span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[#fff0d4] text-[#9a5c0c]"><LockKeyhole className="h-5 w-5" /></span><h2 className="mt-4 !text-[14px] !font-semibold !text-[#5d451d]">Noch nicht veröffentlicht</h2><p className="mt-2 !text-[12px] !font-normal !leading-5 !text-[#765d31]">Dr. Flex bleibt unverändert aktiv. Die neue Slot-Konfiguration arbeitet nur als interne Vorschau; ein Publizieren ist bewusst nicht möglich.</p></section>; }
 
-function IntegrationPanel({ settings }: { settings: BookingSettings }) {
-  const ready = settings.integrationStatus === "ready";
-  return <section className="overflow-hidden rounded-[16px] border border-[#174b70] bg-[#063255] p-5 text-white"><div className="flex items-center justify-between gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-white/10 text-[#ffc376]"><Link2 className="h-5 w-5" /></span><span className={`rounded-[8px] px-2.5 py-1.5 text-[9px] font-semibold ${ready ? "bg-[#dff3e7] text-[#226748]" : "bg-white/10 text-[#c8dbe6]"}`}>{ready ? "Vorbereitet" : "Zugang ausstehend"}</span></div><h2 className="mt-4 !text-[14px] !font-semibold !text-white">ivoris-Anbindung vorbereitet</h2><p className="mt-2 !text-[12px] !font-normal !leading-5 !text-[#b8ceda]">Die lokale Planung funktioniert bereits. Für Echtzeit-Synchronisierung werden noch die offizielle ivoris-Webservice-/Connect-Aktivierung und Hersteller-Zugangsdaten benötigt.</p><div className="mt-4 border-t border-white/10 pt-4 text-[9px] leading-5 text-[#91afc1]">{settings.lastSyncAt ? `Letzter Synchronisationsstatus: ${formatDateTime(settings.lastSyncAt)}` : "Noch keine Synchronisierung durchgeführt."}<br />Keine Zugangsdaten müssen hier eingegeben werden.</div></section>;
+function IntegrationPanel({ status }: { status: IvorisIntegrationStatus | null }) {
+  const ready = status?.state === "ready" && status.executionEnabled;
+  return <section className="overflow-hidden rounded-[16px] border border-[#174b70] bg-[#063255] p-5 text-white"><div className="flex items-center justify-between gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-white/10 text-[#ffc376]"><Link2 className="h-5 w-5" /></span><span className={`rounded-[8px] px-2.5 py-1.5 text-[9px] font-semibold ${ready ? "bg-[#dff3e7] text-[#226748]" : "bg-white/10 text-[#c8dbe6]"}`}>{ready ? "Betriebsbereit" : "Sicher gesperrt"}</span></div><h2 className="mt-4 !text-[14px] !font-semibold !text-white">ivoris REST API v2</h2><p className="mt-2 !text-[12px] !font-normal !leading-5 !text-[#b8ceda]">{status?.message || "Der Sicherheitsstatus konnte gerade nicht geladen werden. Es findet kein Datenaustausch statt."}</p>{status && <><div className="mt-4 space-y-2 border-t border-white/10 pt-4">{status.packages.map((item) => <div key={item.id} className="rounded-[9px] bg-white/[.06] px-3 py-2"><div className="flex items-center justify-between gap-2"><span className="text-[11px] font-semibold text-white">{item.label}</span><span className="text-[9px] text-[#9fc0d1]">{item.requirement === "required" ? "benötigt" : "zu klären"}</span></div><div className="mt-1 text-[9px] leading-4 text-[#a9c2d0]">{item.purpose}</div></div>)}</div><div className="mt-4 border-t border-white/10 pt-4"><div className="text-[9px] font-semibold uppercase tracking-[.07em] text-[#91afc1]">Sicherheitsgrenzen</div><ul className="mt-2 space-y-1.5">{status.securityControls.slice(0, 3).map((item) => <li key={item} className="flex gap-2 text-[9px] leading-4 text-[#b4cbd7]"><ShieldCheck className="mt-0.5 h-3 w-3 shrink-0 text-[#8dd0ad]" />{item}</li>)}</ul></div></>}</section>;
 }
 
 function ScheduleLoading() { return <div className="admin-surface mt-5 flex min-h-[440px] flex-col items-center justify-center text-center"><LoaderCircle className="h-7 w-7 animate-spin text-[#f58a07]" /><h2 className="mt-4 !text-[14px] !font-semibold !text-[#29475d]">Terminplanung wird geladen</h2><p className="mt-1 !text-[12px] !font-normal !text-[#718692]">Termine, Regeln und freie Slots werden zusammengeführt.</p></div>; }

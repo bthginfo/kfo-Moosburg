@@ -125,6 +125,40 @@ export type ScheduleBundle = {
   previewSlots: PreviewSlot[];
 };
 
+export type IvorisIntegrationStatus = {
+  provider: "ivoris";
+  apiVersion: "v2";
+  state: "awaiting_contract" | "awaiting_configuration" | "ready" | "error";
+  executionEnabled: boolean;
+  message: string;
+  packages: Array<{
+    id: "basic" | "management" | "controlling";
+    label: string;
+    purpose: string;
+    requirement: "required" | "conditional";
+  }>;
+  capabilities: Array<{
+    id: "patients" | "appointments" | "insurance" | "payments";
+    label: string;
+    state: "documented" | "needs_confirmation";
+    direction: "pull" | "push" | "bidirectional";
+  }>;
+  prerequisites: string[];
+  securityControls: string[];
+  recentRuns: Array<{
+    id: string;
+    scope: "patients" | "appointments" | "insurance" | "payments";
+    direction: "pull" | "push" | "bidirectional";
+    status: "running" | "succeeded" | "failed" | "uncertain";
+    recordsSeen: number;
+    recordsChanged: number;
+    recordsSkipped: number;
+    errorCode: string;
+    startedAt: string;
+    finishedAt: string;
+  }>;
+};
+
 export type ScheduleEntity = "appointment" | "appointmentType" | "resource" | "availabilityRule" | "exception" | "settings";
 
 export type EstimateStatus = "draft" | "in_review" | "sent" | "accepted" | "declined" | "expired" | "archived";

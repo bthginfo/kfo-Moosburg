@@ -71,7 +71,11 @@ Die öffentliche Buchung ist bewusst doppelt abgesichert: Es wird weder ein öff
 
 ## Vorbereitete ivoris®-Anbindung
 
-Termine besitzen Felder für Quellsystem, externe ID, Synchronisationsstatus und letzten Abgleich. Damit ist die Datenstruktur für `ivoris® termin` vorbereitet. Die echte Echtzeit-Synchronisation benötigt eine offiziell freigeschaltete `ivoris® webservice`-/`ivoris® connect pro`-Anbindung und die technische Dokumentation bzw. Zugangsdaten von Computer konkret/ivoris. Bis diese vorliegen, zeigt der Admin den Status `Zugang erforderlich` und führt keinen vorgetäuschten Abgleich aus. Dafür sind aktuell keine zusätzlichen Vercel-Umgebungsvariablen nötig.
+Die Vorbereitung ist auf die inzwischen offiziell beschriebene **ivoris REST API v2** ausgerichtet. ivoris nennt Patienten, Termine/Terminplaner, Krankenversicherung und Zahlungsinformationen als verfügbare Bereiche. Voraussichtlich werden `Basic` und `Management` benötigt; `Controlling` ist nur sinnvoll, wenn ivoris einen rechnungsbezogenen Zahlungsstatus tatsächlich bestätigt. Die öffentliche Beschreibung nennt aktuell lediglich das Zahlungsverhalten eines Patienten, nicht den Status einer konkreten Rechnung.
+
+Die Anwendung besitzt eine versionsgebundene Adaptergrenze, ein datensparsames Sync-Audit und eine Admin-Statusanzeige. Der Adapter ist absichtlich nicht ausführbar: Bis die vollständige Praxis-API-Dokumentation, eine NDA, die Freischaltung, ein technisches Minimalkonto und getrennte Testzugänge vorliegen, findet keinerlei Netzwerk- oder Datenaustausch mit ivoris statt. Zugangsdaten werden nicht im Admin eingegeben und nicht in der Datenbank gespeichert. Authentifizierungsvariablen werden erst nach Prüfung des offiziell dokumentierten Verfahrens eingeführt.
+
+Die vollständige Feld-, Berechtigungs- und Sicherheitscheckliste steht in `IVORIS_INTEGRATION.md`. Offizielle Quelle: `https://www.ivoris.de/news/rest-api/`.
 
 ## Rechnungsversand
 

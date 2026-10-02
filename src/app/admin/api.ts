@@ -7,6 +7,7 @@ import type {
   EstimateDraft,
   EstimateStatus,
   InvoiceBundle,
+  IvorisIntegrationStatus,
   ReminderDraft,
   ReminderRule,
   ScheduleBundle,
@@ -116,6 +117,7 @@ export const adminApi = {
       body: JSON.stringify({ recipient }),
     }),
   schedule: () => request<ScheduleBundle>("/api/admin-schedule"),
+  ivorisStatus: () => request<IvorisIntegrationStatus>("/api/admin-ivoris"),
   saveScheduleEntity: (entity: ScheduleEntity, data: Record<string, unknown>) =>
     request<ScheduleBundle>("/api/admin-schedule", {
       method: data.id ? "PATCH" : "POST",
